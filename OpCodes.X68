@@ -1,8 +1,4 @@
 *-----------------------------------------------------------
-* Title      :
-* Written by :
-* Date       :
-* Description:
 *   Register Assignments
 *   D0
 *   D1
@@ -17,10 +13,15 @@
 *   A2
 *   A3
 *   A4
-*   A5
+*   A5  Pointer to next byte after last byte in string
 *   A6  Pointer to current word-op
 *   A7  Stack
+*   
+*   Memory Assignments
+*   7500 - 8000: Stack Pointer
+*   7400: Start of String Pointer
 *-----------------------------------------------------------
+STRING_START    EQU $7400
 BEGIN   EQU $1000
 
     ; Fake instructions that will be generated, and then disassembled
@@ -39,7 +40,7 @@ BEGIN   EQU $1000
     ORG    $4000
 START:                  ; first instruction of program
     
-        MOVEA.W $8000,SP
+        MOVEA.L #$00008000,SP
         MOVEA.W #BEGIN,A6
 
 ; Begin examining op-code ID
@@ -53,7 +54,7 @@ LOOP    MOVE.W  (A6)+,D3    ; Load word-op to disassemble
         
         MOVE.W #$1000,D5    ; if (ID == 1)
         CMP     D4,D5
-        BEQ     MOVEB
+        BEQ     OP_MOVEB
         
         MOVE.W #$2000,D5
         CMP     D4,D5
@@ -77,15 +78,15 @@ THREE   BRA     LOOP
 
 ; op-code ID = 4
 FOUR    BTST.L  #$08,D3     ; compare the 8th bit in the op-code to 0
-        BNE     LOADEA      ; if it's a 1, it's a LEA op-code
+        BNE     OP_LEA      ; if it's a 1, it's a LEA op-code
         
         BTST.L  #11,D3     ; compare the 11th bit to 0
-        BEQ     CLEAR       ; if it's a 0, it's a CLR op-code
+        BEQ     OP_CLR       ; if it's a 0, it's a CLR op-code
         BRA     LOOP        ; TO-DO Add more op-code compares for ID=4
 
 
 ; CLR Instruction
-CLEAR   
+OP_CLR   
         ; Verify it's a CLR instruction
         MOVE.W  D3,D4
         ANDI.W  #$FF00,D4
@@ -98,10 +99,8 @@ CLEAR
         BEQ     BAD_INPUT ; CLR cannot have bits 6 and 7 set to 11
         
         ;  Placeholder to print hex address
-        MOVE.B  #15,D0
-        MOVE.W  A6,D1
-        MOVE.B  #16,D2
-        TRAP    #15
+        JSR     PRINT_ADDRESS
+
         
         ; Placehodler to print CLR
         MOVE.B  #6,D0
@@ -138,18 +137,37 @@ PRINT   TRAP    #15
         BRA     LOOP
 
 ; placeholder op-code disassembling
-MOVEB   NOP
-LOADEA  NOP
+OP_MOVEB
+        NOP
+OP_LEA
+        NOP
     
 
+; Printing functions
 BAD_INPUT
         NOP
         BRA     LOOP
+        
+; Temporary function to print out the address of the op in hex
+PRINT_ADDRESS
+        MOVEM.L D0-D3,-(SP)
+        
+        MOVE.B  #15,D0
+        MOVE.L  A6,D1
+        MOVE.L  #2,D3
+        SUB.L   D3,D1
+        MOVE.B  #16,D2
+        TRAP    #15
+        
+        MOVEM.L (SP)+,D0-D3
+        RTS
     
 
 * Put variables and constants here
-
+TXT_OP_CLR      DC.B    'CLR.'
+TXT_OP_SIZE_L   DC.B    'L'
     END    START        ; last line of source
+
 
 
 
