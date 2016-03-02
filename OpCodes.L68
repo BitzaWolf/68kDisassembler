@@ -1,0 +1,240 @@
+00004000 Starting Address
+Assembler used: EASy68K Editor/Assembler v5.15.04
+Created On: 3/1/2016 5:28:25 PM
+
+00000000                             1  *-----------------------------------------------------------
+00000000                             2  *   Register Assignments
+00000000                             3  *   D0
+00000000                             4  *   D1
+00000000                             5  *   D2
+00000000                             6  *   D3  Word operation read in from memory
+00000000                             7  *   D4  Masked op-code (original op-code with a mask applied)
+00000000                             8  *   D5  Testing masked op-code against a set value
+00000000                             9  *   D6
+00000000                            10  *   D7
+00000000                            11  *   A0  
+00000000                            12  *   A1  String to append to display buffer
+00000000                            13  *   A2
+00000000                            14  *   A3
+00000000                            15  *   A4
+00000000                            16  *   A5  Pointer to next byte after last byte in string
+00000000                            17  *   A6  Pointer to current word-op
+00000000                            18  *   A7  Stack
+00000000                            19  *   
+00000000                            20  *   Memory Assignments
+00000000                            21  *   7500 - 8000: Stack Pointer
+00000000                            22  *   7400: Start of String Pointer (display buffer)
+00000000                            23  *-----------------------------------------------------------
+00000000  =00007400                 24  STRING_PTR      EQU $7400
+00000000  =00001000                 25  BEGIN           EQU $1000
+00000000                            26  
+00000000                            27      ; Fake instructions that will be generated, and then disassembled
+00001000                            28      ORG    BEGIN
+00001000  3C40                      29      MOVEA.W     D0,A6
+00001002  2041                      30      MOVEA.L     D1,A0
+00001004  43F8 1052                 31      LEA         $1052,A1
+00001008  4280                      32      CLR.L       D0
+0000100A  4202                      33      CLR.B       D2
+0000100C  3C40                      34      MOVEA.W     D0,A6
+0000100E  2041                      35      MOVEA.L     D1,A0
+00001010  4E71                      36      NOP
+00001012                            37      
+00001012                            38      ; 
+00001012                            39  
+00004000                            40      ORG    $4000
+00004000                            41  START:                  ; first instruction of program
+00004000                            42      
+00004000  2E7C 00008000             43          MOVEA.L #$00008000,SP
+00004006  3C7C 1000                 44          MOVEA.W #BEGIN,A6
+0000400A  2A7C 00007400             45          MOVEA.L #STRING_PTR,A5
+00004010                            46  
+00004010                            47  ; Begin examining op-code ID
+00004010  361E                      48  LOOP    MOVE.W  (A6)+,D3    ; Load word-op to disassemble
+00004012  3803                      49          MOVE.W  D3,D4       ; Copy to another location so it's safe to modify
+00004014  0244 F000                 50          ANDI.W  #$F000,D4   ; bitmask it for the last 4 bits (op-code ID)
+00004018                            51          
+00004018  4245                      52          CLR     D5
+0000401A  BA44                      53          CMP     D4,D5       ; if (IF == 0)
+0000401C  6700 002A                 54          BEQ     ZERO
+00004020                            55          
+00004020  3A3C 1000                 56          MOVE.W #$1000,D5    ; if (ID == 1)
+00004024  BA44                      57          CMP     D4,D5
+00004026  6700 0090                 58          BEQ     OP_MOVEB
+0000402A                            59          
+0000402A  3A3C 2000                 60          MOVE.W #$2000,D5
+0000402E  BA44                      61          CMP     D4,D5
+00004030  6700 0018                 62          BEQ     TWO
+00004034                            63          
+00004034  3A3C 3000                 64          MOVE.W #$3000,D5
+00004038  BA44                      65          CMP     D4,D5
+0000403A  6700 0010                 66          BEQ     THREE
+0000403E                            67          
+0000403E  3A3C 4000                 68          MOVE.W #$4000,D5
+00004042  BA44                      69          CMP     D4,D5
+00004044  6700 0008                 70          BEQ     FOUR
+00004048                            71          
+00004048                            72  ; End ID cases
+00004048                            73          
+00004048  60C6                      74  ZERO    BRA     LOOP
+0000404A                            75  
+0000404A  60C4                      76  TWO     BRA     LOOP
+0000404C                            77  
+0000404C  60C2                      78  THREE   BRA     LOOP
+0000404E                            79  
+0000404E                            80  ; op-code ID = 4
+0000404E  0803 0008                 81  FOUR    BTST.L  #$08,D3     ; compare the 8th bit in the op-code to 0
+00004052  6600 0066                 82          BNE     OP_LEA      ; if it's a 1, it's a LEA op-code
+00004056                            83          
+00004056  0803 000B                 84          BTST.L  #11,D3     ; compare the 11th bit to 0
+0000405A  6700 001A                 85          BEQ     OP_CLR       ; if it's a 0, it's a CLR op-code
+0000405E  60B0                      86          BRA     LOOP        ; TO-DO Add more op-code compares for ID=4
+00004060                            87  
+00004060                            88  ; Print out code.
+00004060                            89  LOOP_END
+00004060  1ABC 0000                 90          MOVE.B  #0,(A5)
+00004064  227C 00007400             91          MOVEA.L #STRING_PTR,A1
+0000406A  700D                      92          MOVE.L  #13,D0
+0000406C  4E4F                      93          TRAP    #15
+0000406E  2A7C 00007400             94          MOVEA.L #STRING_PTR,A5
+00004074  609A                      95          BRA     LOOP
+00004076                            96  
+00004076                            97  ; CLR Instruction
+00004076                            98  OP_CLR   
+00004076                            99          ; Verify it's a CLR instruction
+00004076  3803                     100          MOVE.W  D3,D4
+00004078  0244 FF00                101          ANDI.W  #$FF00,D4
+0000407C  0C44 4200                102          CMPI.W  #$4200,D4
+00004080  6600 003A                103          BNE     BAD_INPUT
+00004084                           104          
+00004084  3803                     105          MOVE.W  D3,D4
+00004086  0244 00C0                106          ANDI.W  #$00C0,D4
+0000408A  0C44 00C0                107          CMPI.W  #$00C0,D4
+0000408E  6700 002C                108          BEQ     BAD_INPUT ; CLR cannot have bits 6 and 7 set to 11
+00004092                           109          
+00004092                           110          ;  Placeholder to print hex address
+00004092  4EB9 000040C2            111          JSR     PRINT_ADDRESS
+00004098  43F9 0000413A            112          LEA     TXT_OP_CLR,A1
+0000409E  4EB9 000040F6            113          JSR     APPEND_STRING
+000040A4  4EB9 00004100            114          JSR     PRINT_SIZE
+000040AA                           115          
+000040AA  3803                     116          MOVE.W  D3,D4
+000040AC  0244 003F                117          ANDI.W  #$003F,D4
+000040B0  4EB9 0000412E            118          JSR     DUKE_EA
+000040B6                           119          
+000040B6  60A8                     120          BRA     LOOP_END
+000040B8                           121          
+000040B8                           122  
+000040B8                           123  
+000040B8                           124  ; placeholder op-code disassembling
+000040B8                           125  OP_MOVEB
+000040B8  4E71                     126          NOP
+000040BA                           127  OP_LEA
+000040BA  4E71                     128          NOP
+000040BC                           129      
+000040BC                           130  
+000040BC                           131  ; Printing functions
+000040BC                           132  BAD_INPUT
+000040BC  4E71                     133          NOP
+000040BE  6000 FF50                134          BRA     LOOP
+000040C2                           135          
+000040C2                           136  ; Temporary function to print out the address of the op in hex
+000040C2                           137  PRINT_ADDRESS
+000040C2  48E7 F000                138          MOVEM.L D0-D3,-(SP)
+000040C6                           139          
+000040C6  200E                     140          MOVE.L  A6,D0
+000040C8  2200                     141          MOVE.L  D0,D1
+000040CA                           142          
+000040CA                           143  PRINT_ADDRESS_LOOP
+000040CA  0281 0000000F            144          ANDI.L  #$0000000F,D1
+000040D0  0C01 000A                145          CMPI.B  #$0A,D1
+000040D4  6D00 0004                146          BLT     PRINT_ADDRESS_DECIMAL
+000040D8  5E01                     147          ADDI.B  #$7,D1
+000040DA                           148          
+000040DA                           149  PRINT_ADDRESS_DECIMAL
+000040DA  0601 0030                150          ADDI.B  #$30,D1
+000040DE  1AC1                     151          MOVE.B  D1,(A5)+
+000040E0  E888                     152          LSR.L   #4,D0
+000040E2  2200                     153          MOVE.L  D0,D1
+000040E4  0C80 00000000            154          CMPI.L  #0,D0
+000040EA  66DE                     155          BNE     PRINT_ADDRESS_LOOP
+000040EC                           156          
+000040EC  1AFC 0020                157          MOVE.B  #$20,(A5)+
+000040F0                           158          
+000040F0  4CDF 000F                159          MOVEM.L (SP)+,D0-D3
+000040F4  4E75                     160          RTS
+000040F6                           161      
+000040F6                           162  ; Temporary function to append a string held in A1 to the string pointer
+000040F6                           163  APPEND_STRING
+000040F6  1AD9                     164          MOVE.B  (A1)+,(A5)+
+000040F8  0C11 0000                165          CMP.B   #0,(A1)
+000040FC  66F8                     166          BNE     APPEND_STRING
+000040FE                           167          
+000040FE  4E75                     168          RTS
+00004100                           169          
+00004100                           170  ; Temp function to print 'B', 'W', or 'L' depending on the data in D4
+00004100                           171  PRINT_SIZE
+00004100  0C44 0000                172          CMPI.W  #$0000,D4
+00004104  6700 000E                173          BEQ     PRINT_SIZE_B
+00004108  0C44 0040                174          CMPI.W  #$0040,D4
+0000410C  6700 000E                175          BEQ     PRINT_SIZE_W
+00004110  6000 0012                176          BRA     PRINT_SIZE_L
+00004114                           177  
+00004114                           178  PRINT_SIZE_B
+00004114  1AFC 0042                179          MOVE.B  #$42,(A5)+
+00004118  6000 000E                180          BRA     PRINT_SIZE_END
+0000411C                           181          
+0000411C                           182  PRINT_SIZE_W
+0000411C  1AFC 0057                183          MOVE.B  #$57,(A5)+
+00004120  6000 0006                184          BRA     PRINT_SIZE_END
+00004124                           185  
+00004124                           186  PRINT_SIZE_L
+00004124  1AFC 004C                187          MOVE.B  #$4C,(A5)+
+00004128                           188  
+00004128                           189  PRINT_SIZE_END
+00004128  1AFC 0020                190          MOVE.B  #$20,(A5)+
+0000412C  4E75                     191          RTS
+0000412E                           192          
+0000412E                           193  ; Temp function to Print EA information
+0000412E                           194  DUKE_EA
+0000412E  43F9 0000413F            195          LEA     TXT_DEFAULT_EA,A1
+00004134  4EB8 40F6                196          JSR     APPEND_STRING
+00004138  4E75                     197          RTS
+0000413A                           198          
+0000413A                           199  
+0000413A                           200  * Put variables and constants here
+0000413A= 43 4C 52 2E 00           201  TXT_OP_CLR      DC.B    'CLR.',0
+0000413F= 58 58 58 58 58 58 00     202  TXT_DEFAULT_EA  DC.B    'XXXXXX',0
+00004146                           203      END    START        ; last line of source
+
+No errors detected
+No warnings generated
+
+
+SYMBOL TABLE INFORMATION
+Symbol-name         Value
+-------------------------
+APPEND_STRING       40F6
+BAD_INPUT           40BC
+BEGIN               1000
+DUKE_EA             412E
+FOUR                404E
+LOOP                4010
+LOOP_END            4060
+OP_CLR              4076
+OP_LEA              40BA
+OP_MOVEB            40B8
+PRINT_ADDRESS       40C2
+PRINT_ADDRESS_DECIMAL  40DA
+PRINT_ADDRESS_LOOP  40CA
+PRINT_SIZE          4100
+PRINT_SIZE_B        4114
+PRINT_SIZE_END      4128
+PRINT_SIZE_L        4124
+PRINT_SIZE_W        411C
+START               4000
+STRING_PTR          7400
+THREE               404C
+TWO                 404A
+TXT_DEFAULT_EA      413F
+TXT_OP_CLR          413A
+ZERO                4048

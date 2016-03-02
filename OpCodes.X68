@@ -8,8 +8,8 @@
 *   D5  Testing masked op-code against a set value
 *   D6
 *   D7
-*   A0
-*   A1
+*   A0  
+*   A1  String to append to display buffer
 *   A2
 *   A3
 *   A4
@@ -19,10 +19,10 @@
 *   
 *   Memory Assignments
 *   7500 - 8000: Stack Pointer
-*   7400: Start of String Pointer
+*   7400: Start of String Pointer (display buffer)
 *-----------------------------------------------------------
-STRING_START    EQU $7400
-BEGIN   EQU $1000
+STRING_PTR      EQU $7400
+BEGIN           EQU $1000
 
     ; Fake instructions that will be generated, and then disassembled
     ORG    BEGIN
@@ -42,6 +42,7 @@ START:                  ; first instruction of program
     
         MOVEA.L #$00008000,SP
         MOVEA.W #BEGIN,A6
+        MOVEA.L #STRING_PTR,A5
 
 ; Begin examining op-code ID
 LOOP    MOVE.W  (A6)+,D3    ; Load word-op to disassemble
@@ -84,6 +85,14 @@ FOUR    BTST.L  #$08,D3     ; compare the 8th bit in the op-code to 0
         BEQ     OP_CLR       ; if it's a 0, it's a CLR op-code
         BRA     LOOP        ; TO-DO Add more op-code compares for ID=4
 
+; Print out code.
+LOOP_END
+        MOVE.B  #0,(A5)
+        MOVEA.L #STRING_PTR,A1
+        MOVE.L  #13,D0
+        TRAP    #15
+        MOVEA.L #STRING_PTR,A5
+        BRA     LOOP
 
 ; CLR Instruction
 OP_CLR   
@@ -100,41 +109,17 @@ OP_CLR
         
         ;  Placeholder to print hex address
         JSR     PRINT_ADDRESS
+        LEA     TXT_OP_CLR,A1
+        JSR     APPEND_STRING
+        JSR     PRINT_SIZE
+        
+        MOVE.W  D3,D4
+        ANDI.W  #$003F,D4
+        JSR     DUKE_EA
+        
+        BRA     LOOP_END
+        
 
-        
-        ; Placehodler to print CLR
-        MOVE.B  #6,D0
-        MOVE.B  #$20,D1
-        TRAP    #15
-        MOVE.B  #$43,D1
-        TRAP    #15
-        MOVE.B  #$4C,D1
-        TRAP    #15
-        MOVE.B  #$52,D1
-        TRAP    #15
-        MOVE.B  #$2E,D1
-        TRAP    #15
-        
-        ; Determine Size
-        ; Placeholder code to print out size
-        CMPI.W  #$0000,D4
-        BEQ     PRINT_B
-        CMPI.W  #$0040,D4
-        BEQ     PRINT_W
-        MOVE.B  #$4C,D1
-        BRA     PRINT
-        
-PRINT_B MOVE.B  #$42,D1
-        BRA     PRINT
-        
-PRINT_W MOVE.B  #$57,D1
-
-PRINT   TRAP    #15
-        MOVE.B  #$0D,D1
-        TRAP    #15
-        MOVE.B  #$0A,D1
-        TRAP    #15
-        BRA     LOOP
 
 ; placeholder op-code disassembling
 OP_MOVEB
@@ -152,21 +137,71 @@ BAD_INPUT
 PRINT_ADDRESS
         MOVEM.L D0-D3,-(SP)
         
-        MOVE.B  #15,D0
-        MOVE.L  A6,D1
-        MOVE.L  #2,D3
-        SUB.L   D3,D1
-        MOVE.B  #16,D2
-        TRAP    #15
+        MOVE.L  A6,D0
+        MOVE.L  D0,D1
+        
+PRINT_ADDRESS_LOOP
+        ANDI.L  #$0000000F,D1
+        CMPI.B  #$0A,D1
+        BLT     PRINT_ADDRESS_DECIMAL
+        ADDI.B  #$7,D1
+        
+PRINT_ADDRESS_DECIMAL
+        ADDI.B  #$30,D1
+        MOVE.B  D1,(A5)+
+        LSR.L   #4,D0
+        MOVE.L  D0,D1
+        CMPI.L  #0,D0
+        BNE     PRINT_ADDRESS_LOOP
+        
+        MOVE.B  #$20,(A5)+
         
         MOVEM.L (SP)+,D0-D3
         RTS
     
+; Temporary function to append a string held in A1 to the string pointer
+APPEND_STRING
+        MOVE.B  (A1)+,(A5)+
+        CMP.B   #0,(A1)
+        BNE     APPEND_STRING
+        
+        RTS
+        
+; Temp function to print 'B', 'W', or 'L' depending on the data in D4
+PRINT_SIZE
+        CMPI.W  #$0000,D4
+        BEQ     PRINT_SIZE_B
+        CMPI.W  #$0040,D4
+        BEQ     PRINT_SIZE_W
+        BRA     PRINT_SIZE_L
+
+PRINT_SIZE_B
+        MOVE.B  #$42,(A5)+
+        BRA     PRINT_SIZE_END
+        
+PRINT_SIZE_W
+        MOVE.B  #$57,(A5)+
+        BRA     PRINT_SIZE_END
+
+PRINT_SIZE_L
+        MOVE.B  #$4C,(A5)+
+
+PRINT_SIZE_END
+        MOVE.B  #$20,(A5)+
+        RTS
+        
+; Temp function to Print EA information
+DUKE_EA
+        LEA     TXT_DEFAULT_EA,A1
+        JSR     APPEND_STRING
+        RTS
+        
 
 * Put variables and constants here
-TXT_OP_CLR      DC.B    'CLR.'
-TXT_OP_SIZE_L   DC.B    'L'
+TXT_OP_CLR      DC.B    'CLR.',0
+TXT_DEFAULT_EA  DC.B    'XXXXXX',0
     END    START        ; last line of source
+
 
 
 
