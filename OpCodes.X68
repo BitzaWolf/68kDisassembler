@@ -107,7 +107,7 @@ OP_CLR
         CMPI.W  #$00C0,D4
         BEQ     BAD_INPUT ; CLR cannot have bits 6 and 7 set to 11
         
-        ;  Placeholder to print hex address
+        ; Print instructions
         JSR     PRINT_ADDRESS
         LEA     TXT_OP_CLR,A1
         JSR     APPEND_STRING
@@ -133,12 +133,15 @@ BAD_INPUT
         NOP
         BRA     LOOP
         
-; Temporary function to print out the address of the op in hex
+; fUnction to print out the address of the op in hex
 PRINT_ADDRESS
-        MOVEM.L D0-D3,-(SP)
+        MOVEM.L D0-D2,-(SP)
         
-        MOVE.L  A6,D0
+        MOVE.L  A6,D0 ; Move op-code address to D0
+        SUBI.L  #2,D0
+        ROL.L   #4,D0
         MOVE.L  D0,D1
+        MOVE.B  #8,D2 ; Loop counter. Run 8 times.
         
 PRINT_ADDRESS_LOOP
         ANDI.L  #$0000000F,D1
@@ -148,15 +151,16 @@ PRINT_ADDRESS_LOOP
         
 PRINT_ADDRESS_DECIMAL
         ADDI.B  #$30,D1
-        MOVE.B  D1,(A5)+
-        LSR.L   #4,D0
+        MOVE.B  D1,(A5)+ ; Write char to string
+        ROL.L   #4,D0
         MOVE.L  D0,D1
-        CMPI.L  #0,D0
+        SUBI.B  #1,D2 ; check loop condition
+        CMPI.L  #0,D2
         BNE     PRINT_ADDRESS_LOOP
         
-        MOVE.B  #$20,(A5)+
+        MOVE.B  #$20,(A5)+ ; Write ' ' to string
         
-        MOVEM.L (SP)+,D0-D3
+        MOVEM.L (SP)+,D0-D2
         RTS
     
 ; Temporary function to append a string held in A1 to the string pointer
@@ -201,6 +205,7 @@ DUKE_EA
 TXT_OP_CLR      DC.B    'CLR.',0
 TXT_DEFAULT_EA  DC.B    'XXXXXX',0
     END    START        ; last line of source
+
 
 
 

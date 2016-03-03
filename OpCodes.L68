@@ -1,6 +1,6 @@
 00004000 Starting Address
 Assembler used: EASy68K Editor/Assembler v5.15.04
-Created On: 3/1/2016 5:28:25 PM
+Created On: 2/3/2016 7:08:13 AM
 
 00000000                             1  *-----------------------------------------------------------
 00000000                             2  *   Register Assignments
@@ -111,15 +111,15 @@ Created On: 3/1/2016 5:28:25 PM
 0000408A  0C44 00C0                107          CMPI.W  #$00C0,D4
 0000408E  6700 002C                108          BEQ     BAD_INPUT ; CLR cannot have bits 6 and 7 set to 11
 00004092                           109          
-00004092                           110          ;  Placeholder to print hex address
+00004092                           110          ; Print instructions
 00004092  4EB9 000040C2            111          JSR     PRINT_ADDRESS
-00004098  43F9 0000413A            112          LEA     TXT_OP_CLR,A1
-0000409E  4EB9 000040F6            113          JSR     APPEND_STRING
-000040A4  4EB9 00004100            114          JSR     PRINT_SIZE
+00004098  43F9 00004144            112          LEA     TXT_OP_CLR,A1
+0000409E  4EB9 00004100            113          JSR     APPEND_STRING
+000040A4  4EB9 0000410A            114          JSR     PRINT_SIZE
 000040AA                           115          
 000040AA  3803                     116          MOVE.W  D3,D4
 000040AC  0244 003F                117          ANDI.W  #$003F,D4
-000040B0  4EB9 0000412E            118          JSR     DUKE_EA
+000040B0  4EB9 00004138            118          JSR     DUKE_EA
 000040B6                           119          
 000040B6  60A8                     120          BRA     LOOP_END
 000040B8                           121          
@@ -137,74 +137,78 @@ Created On: 3/1/2016 5:28:25 PM
 000040BC  4E71                     133          NOP
 000040BE  6000 FF50                134          BRA     LOOP
 000040C2                           135          
-000040C2                           136  ; Temporary function to print out the address of the op in hex
+000040C2                           136  ; fUnction to print out the address of the op in hex
 000040C2                           137  PRINT_ADDRESS
-000040C2  48E7 F000                138          MOVEM.L D0-D3,-(SP)
+000040C2  48E7 E000                138          MOVEM.L D0-D2,-(SP)
 000040C6                           139          
-000040C6  200E                     140          MOVE.L  A6,D0
-000040C8  2200                     141          MOVE.L  D0,D1
-000040CA                           142          
-000040CA                           143  PRINT_ADDRESS_LOOP
-000040CA  0281 0000000F            144          ANDI.L  #$0000000F,D1
-000040D0  0C01 000A                145          CMPI.B  #$0A,D1
-000040D4  6D00 0004                146          BLT     PRINT_ADDRESS_DECIMAL
-000040D8  5E01                     147          ADDI.B  #$7,D1
-000040DA                           148          
-000040DA                           149  PRINT_ADDRESS_DECIMAL
-000040DA  0601 0030                150          ADDI.B  #$30,D1
-000040DE  1AC1                     151          MOVE.B  D1,(A5)+
-000040E0  E888                     152          LSR.L   #4,D0
-000040E2  2200                     153          MOVE.L  D0,D1
-000040E4  0C80 00000000            154          CMPI.L  #0,D0
-000040EA  66DE                     155          BNE     PRINT_ADDRESS_LOOP
-000040EC                           156          
-000040EC  1AFC 0020                157          MOVE.B  #$20,(A5)+
-000040F0                           158          
-000040F0  4CDF 000F                159          MOVEM.L (SP)+,D0-D3
-000040F4  4E75                     160          RTS
-000040F6                           161      
-000040F6                           162  ; Temporary function to append a string held in A1 to the string pointer
-000040F6                           163  APPEND_STRING
-000040F6  1AD9                     164          MOVE.B  (A1)+,(A5)+
-000040F8  0C11 0000                165          CMP.B   #0,(A1)
-000040FC  66F8                     166          BNE     APPEND_STRING
-000040FE                           167          
-000040FE  4E75                     168          RTS
-00004100                           169          
-00004100                           170  ; Temp function to print 'B', 'W', or 'L' depending on the data in D4
-00004100                           171  PRINT_SIZE
-00004100  0C44 0000                172          CMPI.W  #$0000,D4
-00004104  6700 000E                173          BEQ     PRINT_SIZE_B
-00004108  0C44 0040                174          CMPI.W  #$0040,D4
-0000410C  6700 000E                175          BEQ     PRINT_SIZE_W
-00004110  6000 0012                176          BRA     PRINT_SIZE_L
-00004114                           177  
-00004114                           178  PRINT_SIZE_B
-00004114  1AFC 0042                179          MOVE.B  #$42,(A5)+
-00004118  6000 000E                180          BRA     PRINT_SIZE_END
-0000411C                           181          
-0000411C                           182  PRINT_SIZE_W
-0000411C  1AFC 0057                183          MOVE.B  #$57,(A5)+
-00004120  6000 0006                184          BRA     PRINT_SIZE_END
-00004124                           185  
-00004124                           186  PRINT_SIZE_L
-00004124  1AFC 004C                187          MOVE.B  #$4C,(A5)+
-00004128                           188  
-00004128                           189  PRINT_SIZE_END
-00004128  1AFC 0020                190          MOVE.B  #$20,(A5)+
-0000412C  4E75                     191          RTS
-0000412E                           192          
-0000412E                           193  ; Temp function to Print EA information
-0000412E                           194  DUKE_EA
-0000412E  43F9 0000413F            195          LEA     TXT_DEFAULT_EA,A1
-00004134  4EB8 40F6                196          JSR     APPEND_STRING
-00004138  4E75                     197          RTS
-0000413A                           198          
-0000413A                           199  
-0000413A                           200  * Put variables and constants here
-0000413A= 43 4C 52 2E 00           201  TXT_OP_CLR      DC.B    'CLR.',0
-0000413F= 58 58 58 58 58 58 00     202  TXT_DEFAULT_EA  DC.B    'XXXXXX',0
-00004146                           203      END    START        ; last line of source
+000040C6  200E                     140          MOVE.L  A6,D0 ; Move op-code address to D0
+000040C8  5580                     141          SUBI.L  #2,D0
+000040CA  E998                     142          ROL.L   #4,D0
+000040CC  2200                     143          MOVE.L  D0,D1
+000040CE  143C 0008                144          MOVE.B  #8,D2 ; Loop counter. Run 8 times.
+000040D2                           145          
+000040D2                           146  PRINT_ADDRESS_LOOP
+000040D2  0281 0000000F            147          ANDI.L  #$0000000F,D1
+000040D8  0C01 000A                148          CMPI.B  #$0A,D1
+000040DC  6D00 0004                149          BLT     PRINT_ADDRESS_DECIMAL
+000040E0  5E01                     150          ADDI.B  #$7,D1
+000040E2                           151          
+000040E2                           152  PRINT_ADDRESS_DECIMAL
+000040E2  0601 0030                153          ADDI.B  #$30,D1
+000040E6  1AC1                     154          MOVE.B  D1,(A5)+ ; Write char to string
+000040E8  E998                     155          ROL.L   #4,D0
+000040EA  2200                     156          MOVE.L  D0,D1
+000040EC  5302                     157          SUBI.B  #1,D2 ; check loop condition
+000040EE  0C82 00000000            158          CMPI.L  #0,D2
+000040F4  66DC                     159          BNE     PRINT_ADDRESS_LOOP
+000040F6                           160          
+000040F6  1AFC 0020                161          MOVE.B  #$20,(A5)+ ; Write ' ' to string
+000040FA                           162          
+000040FA  4CDF 0007                163          MOVEM.L (SP)+,D0-D2
+000040FE  4E75                     164          RTS
+00004100                           165      
+00004100                           166  ; Temporary function to append a string held in A1 to the string pointer
+00004100                           167  APPEND_STRING
+00004100  1AD9                     168          MOVE.B  (A1)+,(A5)+
+00004102  0C11 0000                169          CMP.B   #0,(A1)
+00004106  66F8                     170          BNE     APPEND_STRING
+00004108                           171          
+00004108  4E75                     172          RTS
+0000410A                           173          
+0000410A                           174  ; Temp function to print 'B', 'W', or 'L' depending on the data in D4
+0000410A                           175  PRINT_SIZE
+0000410A  0C44 0000                176          CMPI.W  #$0000,D4
+0000410E  6700 000E                177          BEQ     PRINT_SIZE_B
+00004112  0C44 0040                178          CMPI.W  #$0040,D4
+00004116  6700 000E                179          BEQ     PRINT_SIZE_W
+0000411A  6000 0012                180          BRA     PRINT_SIZE_L
+0000411E                           181  
+0000411E                           182  PRINT_SIZE_B
+0000411E  1AFC 0042                183          MOVE.B  #$42,(A5)+
+00004122  6000 000E                184          BRA     PRINT_SIZE_END
+00004126                           185          
+00004126                           186  PRINT_SIZE_W
+00004126  1AFC 0057                187          MOVE.B  #$57,(A5)+
+0000412A  6000 0006                188          BRA     PRINT_SIZE_END
+0000412E                           189  
+0000412E                           190  PRINT_SIZE_L
+0000412E  1AFC 004C                191          MOVE.B  #$4C,(A5)+
+00004132                           192  
+00004132                           193  PRINT_SIZE_END
+00004132  1AFC 0020                194          MOVE.B  #$20,(A5)+
+00004136  4E75                     195          RTS
+00004138                           196          
+00004138                           197  ; Temp function to Print EA information
+00004138                           198  DUKE_EA
+00004138  43F9 00004149            199          LEA     TXT_DEFAULT_EA,A1
+0000413E  4EB8 4100                200          JSR     APPEND_STRING
+00004142  4E75                     201          RTS
+00004144                           202          
+00004144                           203  
+00004144                           204  * Put variables and constants here
+00004144= 43 4C 52 2E 00           205  TXT_OP_CLR      DC.B    'CLR.',0
+00004149= 58 58 58 58 58 58 00     206  TXT_DEFAULT_EA  DC.B    'XXXXXX',0
+00004150                           207      END    START        ; last line of source
 
 No errors detected
 No warnings generated
@@ -213,10 +217,10 @@ No warnings generated
 SYMBOL TABLE INFORMATION
 Symbol-name         Value
 -------------------------
-APPEND_STRING       40F6
+APPEND_STRING       4100
 BAD_INPUT           40BC
 BEGIN               1000
-DUKE_EA             412E
+DUKE_EA             4138
 FOUR                404E
 LOOP                4010
 LOOP_END            4060
@@ -224,17 +228,17 @@ OP_CLR              4076
 OP_LEA              40BA
 OP_MOVEB            40B8
 PRINT_ADDRESS       40C2
-PRINT_ADDRESS_DECIMAL  40DA
-PRINT_ADDRESS_LOOP  40CA
-PRINT_SIZE          4100
-PRINT_SIZE_B        4114
-PRINT_SIZE_END      4128
-PRINT_SIZE_L        4124
-PRINT_SIZE_W        411C
+PRINT_ADDRESS_DECIMAL  40E2
+PRINT_ADDRESS_LOOP  40D2
+PRINT_SIZE          410A
+PRINT_SIZE_B        411E
+PRINT_SIZE_END      4132
+PRINT_SIZE_L        412E
+PRINT_SIZE_W        4126
 START               4000
 STRING_PTR          7400
 THREE               404C
 TWO                 404A
-TXT_DEFAULT_EA      413F
-TXT_OP_CLR          413A
+TXT_DEFAULT_EA      4149
+TXT_OP_CLR          4144
 ZERO                4048
