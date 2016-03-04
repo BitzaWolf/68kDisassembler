@@ -26,7 +26,7 @@ BEGIN           EQU $1000
 
     ; Fake instructions that will be generated, and then disassembled
     ORG    BEGIN
-    MOVEA.W     D0,A6
+    MOVE.B      D0,D1
     MOVEA.L     D1,A0
     LEA         $1052,A1
     CLR.L       D0
@@ -94,7 +94,10 @@ LOOP_END
         MOVEA.L #STRING_PTR,A5
         BRA     LOOP
 
-; CLR Instruction
+;----------------------------------------------------------------------
+; Op-Code Processing Labels (Alphabetical Order)
+;----------------------------------------------------------------------
+
 OP_CLR   
         ; Verify it's a CLR instruction
         MOVE.W  D3,D4
@@ -102,10 +105,11 @@ OP_CLR
         CMPI.W  #$4200,D4
         BNE     BAD_INPUT
         
+        ; CLR cannot have bits 6 and 7 set to 11
         MOVE.W  D3,D4
         ANDI.W  #$00C0,D4
         CMPI.W  #$00C0,D4
-        BEQ     BAD_INPUT ; CLR cannot have bits 6 and 7 set to 11
+        BEQ     BAD_INPUT
         
         ; Print instructions
         JSR     PRINT_ADDRESS
@@ -118,27 +122,79 @@ OP_CLR
         JSR     DUKE_EA
         
         BRA     LOOP_END
-        
 
-
-; placeholder op-code disassembling
-OP_MOVEB
-        NOP
 OP_LEA
-        NOP
-    
-
-; Printing functions
-BAD_INPUT
-        NOP
-        BRA     LOOP
+        ; Veriy it's LEA
+        MOVE.W  D3,D4
+        ANDI.W  #$F1C0,D4
+        CMPI.W  #$41C0,D4
+        BNE     BAD_INPUT
         
-; fUnction to print out the address of the op in hex
+        ; Print
+        JSR     PRINT_ADDRESS
+        LEA     TXT_OP_LEA,A1
+        JSR     APPEND_STRING
+        
+        MOVE.W  D3,D4
+        ANDI.W  #$003F,D4
+        JSR     DUKE_EA
+        
+        BRA     LOOP_END
+
+OP_MOVEB
+        ; Verify
+        MOVE.W  D3,D4
+        ANDI.W  #$F000,D4
+        CMPI.W  #$1000,D4
+        BNE     BAD_INPUT
+        
+        ; Print
+        JSR     PRINT_ADDRESS
+        LEA     TXT_OP_MOVEB,A1
+        JSR     APPEND_STRING
+        
+        MOVE.W  D3,D4
+        ANDI.W  #$0FC0,D4
+        LSR.W   #6,D4
+        JSR     DUKE_EA
+        
+        MOVE.B  #$2C,(A5)+
+        
+        MOVE.W  D3,D4
+        ANDI.W  #$003F,D4
+        JSR     DUKE_EA
+        
+        BRA     LOOP_END
+
+;----------------------------------------------------------------------
+; Printing Functions
+;----------------------------------------------------------------------
+BAD_INPUT
+        ; XXXXXXXX DATA YYYY
+        JSR     PRINT_ADDRESS
+        LEA     TXT_DATA,A1
+        JSR     APPEND_STRING
+        
+        ; Print op-code data as hex
+        ROL.W   #4,D3
+        MOVE.L  D3,D1
+        MOVE.L  #4,D2 ; Loop counter. Run 4 times.
+        
+PRINT_OP_HEX_LOOP
+        ; TODO - FINISH THIS LOOP------------------------------------------------------------------------------------------------------------------
+        
+        BRA     LOOP_END
+
+;--------------------------------------------------
+; Print the literal address currently in A6, 
+; This should be the prevously read op-code, which
+; is the op-code currently being decoded.
+;--------------------------------------------------
 PRINT_ADDRESS
         MOVEM.L D0-D2,-(SP)
         
         MOVE.L  A6,D0 ; Move op-code address to D0
-        SUBI.L  #2,D0
+        SUBI.L  #2,D0 ; Subtract 2 because pointer is to next op-code
         ROL.L   #4,D0
         MOVE.L  D0,D1
         MOVE.B  #8,D2 ; Loop counter. Run 8 times.
@@ -162,16 +218,23 @@ PRINT_ADDRESS_DECIMAL
         
         MOVEM.L (SP)+,D0-D2
         RTS
-    
-; Temporary function to append a string held in A1 to the string pointer
+
+;--------------------------------------------------
+; Append the output buffer with the string starting
+; at A1. The string at A1 must end with 0 (null).
+;--------------------------------------------------
 APPEND_STRING
         MOVE.B  (A1)+,(A5)+
         CMP.B   #0,(A1)
         BNE     APPEND_STRING
         
         RTS
-        
-; Temp function to print 'B', 'W', or 'L' depending on the data in D4
+
+;--------------------------------------------------
+; Prints the character B, W, or L depending on the
+; value in D4.
+; $0000 = B     $0040 = W   anything else = L
+;--------------------------------------------------
 PRINT_SIZE
         CMPI.W  #$0000,D4
         BEQ     PRINT_SIZE_B
@@ -194,6 +257,10 @@ PRINT_SIZE_END
         MOVE.B  #$20,(A5)+
         RTS
         
+;XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+; Appends the decoded EA to the output buffer.
+; Needs to call Duke's code instead!!!
+;XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ; Temp function to Print EA information
 DUKE_EA
         LEA     TXT_DEFAULT_EA,A1
@@ -201,10 +268,17 @@ DUKE_EA
         RTS
         
 
+;----------------------------------------------------------------------
+; End of memory variables and constants
+;----------------------------------------------------------------------
 * Put variables and constants here
+TXT_DATA        DC.B    'DATA ',0
 TXT_OP_CLR      DC.B    'CLR.',0
+TXT_OP_LEA      DC.B    'LEA ',0
+TXT_OP_MOVEB    DC.B    'MOVE.B ',0
 TXT_DEFAULT_EA  DC.B    'XXXXXX',0
     END    START        ; last line of source
+
 
 
 
