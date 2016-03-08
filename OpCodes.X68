@@ -121,8 +121,8 @@ OP_ID_4
         BTST.L  #$08,D3     ; compare the 8th bit in the op-code to 0
         BNE     OP_LEA      ; if it's a 1, it's a LEA op-code
         
-        BTST.L  #11,D3     ; compare the 11th bit to 0
-        BEQ     OP_CLR       ; if it's a 0, it's a CLR op-code
+        BTST.L  #11,D3      ; compare the 11th bit to 0
+        BEQ     OP_CLR      ; if it's a 0, it's a CLR op-code
         BRA     LOOP        ; TO-DO Add more op-code compares for ID=4
 
 OP_ID_5
@@ -329,8 +329,13 @@ OP_SUBI
 ;----------------------------------------------------------------------
 ; Printing Functions
 ;----------------------------------------------------------------------
+;--------------------------------------------------
+; Prints the Data, which is the current op-code.
+; The format is "XXXXXXXX DATA YYYY" where
+; XXXXXXXX is the address of this data, and YYYY
+; is the data.
+;--------------------------------------------------
 BAD_INPUT
-        ; XXXXXXXX DATA YYYY
         JSR     PRINT_ADDRESS
         LEA     TXT_DATA,A1
         JSR     APPEND_STRING
