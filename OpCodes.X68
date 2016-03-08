@@ -5,9 +5,9 @@
 *   D2
 *   D3  Word operation read in from memory
 *   D4  Masked op-code (original op-code with a mask applied)
-*   D5  
-*   D6
-*   D7
+*   D5  Output Counter (number of lines printed,) 
+*   D6 
+*   D7 
 *   A0  
 *   A1  String to append to display buffer
 *   A2
@@ -44,9 +44,18 @@ DUKE_EA_FUNCTION    EQU    $3000
 
     ORG    $2000
 START:                  ; first instruction of program
-    
-        MOVEA.L #$00004000,SP
+        CLR.L   D0
+        CLR.L   D1
+        CLR.L   D2
+        CLR.L   D3
+        CLR.L   D4
+        CLR.L   D5
+        CLR.L   D6
+        CLR.L   D7
+        
+        ; MOVEA.L #$00004000,SP
         MOVEA.W #BEGIN,A6
+        MOVEA.W #END,A4
         MOVEA.L #STRING_PTR,A5
 
 ; Begin examining op-code ID
@@ -154,7 +163,7 @@ LOOP_END
         TRAP    #15
         MOVEA.L #STRING_PTR,A5
         
-        CMPA.L  #END,A6
+        CMPA.L  A4,A6
         BEQ     Z_END
                 
         BRA     LOOP
@@ -204,7 +213,7 @@ OP_CLR
         
         MOVE.W  D3,D4
         ANDI.W  #$003F,D4
-        JSR     DUKE_EA
+        JSR     DUKE_EA_FUNCTION
         
         BRA     LOOP_END
         
@@ -241,9 +250,20 @@ OP_LEA
         LEA     TXT_OP_LEA,A1
         JSR     APPEND_STRING
         
+        MOVE.W  D3,D5
+        ANDI.W  #$003F,D5
+        MOVE.B  #0,D6
+        MOVE.B  #$10,D7
+        JSR     DUKE_EA_FUNCTION
+        
+        MOVE.B  #$2C,(A5)+
+        
+        ; Print Address Register
         MOVE.W  D3,D4
-        ANDI.W  #$003F,D4
-        JSR     DUKE_EA
+        ANDI.W  #$0E,D4
+        LSR.W   #1,D4
+        ADD.W   #$30,D4
+        MOVE.B  D4,(A5)+
         
         BRA     LOOP_END
         
@@ -447,7 +467,8 @@ DUKE_EA
 ; End the function. Return to Mark particularly!
 ;XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 Z_END
-        NOP
+        ;NOP
+        RTS
         
 
 ;----------------------------------------------------------------------
@@ -496,6 +517,7 @@ TXT_OP_SUBI     DC.B    'SUBI.',0
 TXT_DEFAULT_EA  DC.B    'XXXXXX',0
 STRING_PTR      DC.B    0
     END    START        ; last line of source
+
 
 
 
