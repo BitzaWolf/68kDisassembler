@@ -10,18 +10,20 @@
 *                     HELPER FUNCTIONS                     *
 ************************************************************
 SETPREV
-            MOVEM.L     D0-D4,-(SP)     Save data to stack so not to affect I/O or OpCode:
+            MOVEM.L     D0-D7,-(SP)     Save data to stack so not to affect I/O or OpCode:
             BRA         HEXTOOCT        at beginning of program
 GETPREV
-            MOVEM.L     (SP)+,D0-D4     Get data from stack for original datas:
+            MOVEM.L     (SP)+,D0-D7     Get data from stack for original datas:
             BRA         DONE            at end of program
 
 LONGTOASCII
+            MOVE.B      #'$',(A5)+
             MOVE.L      (A6),D0         Move data to temporary data register as Long
             MOVE.B      #0,D3           Let HEXTOASCII know if 0 = Long or 1 = Word
             JSR         HEXTOASCII      Convert Hex to ASCII
             RTS
 WORDTOASCII
+            MOVE.B      #'$',(A5)+
             MOVE.W      (A6),D0         Move data to temporary data register as Word
             MOVE.B      #1,D3
             JSR         HEXTOASCII
@@ -231,6 +233,7 @@ LF          EQU         $0A
 DISPERROR   DC.B        'GENERAL EA ERROR',CR,LF,0
 
             END         START           ; last line of source
+
 
 *~Font name~Courier New~
 *~Font size~10~

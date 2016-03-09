@@ -83,7 +83,8 @@ CONTINUE_END_2
         TRAP    #15
 *----------------------------------
 *--------Jump to Op code to print all outputs
-*------------------------------------        
+*------------------------------------    
+        JSR     $2000    
         BRA     ASK_USER_FOR_INPUT
 *--------------------------------------------------------------------------------------------- 
        
@@ -276,6 +277,7 @@ END_INPUT       DS.B    80      Stores the end address input
 
 
     END    START        ; last line of source
+
 
 
 

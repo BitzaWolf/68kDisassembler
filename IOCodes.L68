@@ -1,0 +1,337 @@
+00001000 Starting Address
+Assembler used: EASy68K Editor/Assembler v5.15.04
+Created On: 3/8/2016 4:12:54 PM
+
+00000000                             1  *-----------------------------------------------------------
+00000000                             2  * Title      :Read in address
+00000000                             3  * Written by : Mark Moerdyk
+00000000                             4  * Date       : 2/15/2016
+00000000                             5  * Description: Asks user for starting and ending address
+00000000                             6  *-----------------------------------------------------------
+00001000                             7      ORG    $1000
+00001000                             8  START:                  ; first instruction of program
+00001000                             9  *-----------------intro message
+00001000  43F9 00001264             10          LEA     INTROMESSAGE,A1 Display intro message
+00001006  103C 000E                 11          MOVE.B  #14, D0     TRAP task 14 calls to print data in D0 to screen
+0000100A  4E4F                      12          TRAP    #15         Execute task 14
+0000100C                            13          
+0000100C                            14  GET_START_ADDR
+0000100C  43F9 0000127D             15          LEA     START_ADDR_MES,A1 Display starting address message        
+00001012  103C 000E                 16          MOVE.B  #14, D0     TRAP task 14 calls to print data in D0 to screen
+00001016  4E4F                      17          TRAP    #15         Execute task 14
+00001018  43F9 00001416             18          LEA     START_INPUT, A1 store input into memory
+0000101E  7002                      19          MOVEQ   #2,D0       Trap task 2 scans input from console
+00001020  4E4F                      20          TRAP    #15         Execute task 2
+00001022  4EB9 000010E4             21          JSR     CORRECT_LENGTH Check to see if number entered is correct length
+00001028  B83C 0001                 22          CMP.B   #1,D4       If D4 equals 1, then entered value is correct length
+0000102C  6700 0010                 23          BEQ     CONTINUE_START_1 If correct, then continue checks with input
+00001030                            24    
+00001030                            25  INPUT_FAIL
+00001030  43F9 000012D3             26          LEA     FAIL_MESSAGE,A1 Display address error message if failed test
+00001036  103C 000E                 27          MOVE.B  #14,D0        TRAP task 14 calls to print data in D0 to screen
+0000103A  4E4F                      28          TRAP    #15         Execute task 14
+0000103C  60CE                      29          BRA     GET_START_ADDR  Go back and get new starting address
+0000103E                            30          
+0000103E                            31  CONTINUE_START_1    *Start address is right length, check to see if odd address
+0000103E  4EB9 00001100             32          JSR     ASCII_2_HEX     Converts the Ascii value typed in into hex value
+00001044  2C43                      33          MOVEA.L D3,A6       Move starting address into address A5
+00001046  4EB9 00001142             34          JSR     ODD_TEST    Check to see if value is odd
+0000104C  B83C 0001                 35          CMP.B   #1, D4      If D4 equals 1, then passed test.
+00001050  6700 0004                 36          BEQ     CONTINUE_START_2    Passed test, last check
+00001054  60B6                      37          BRA     GET_START_ADDR  failed test so get new starting address
+00001056                            38          
+00001056                            39  CONTINUE_START_2
+00001056  2443                      40          MOVEA.L D3, A2
+00001058  4EB9 00001166             41          JSR RANGE_TEST  check to see if value is in range
+0000105E  B83C 0000                 42          CMP.B   #0,D4   check to see if failed range test
+00001062  67A8                      43          BEQ     GET_START_ADDR  if equal, then get start address again
+00001064  2E03                      44          MOVE.L  D3,D7   Move address so it can be compared to end address later
+00001066  2C43                      45          MOVEA.L D3,A6   start address all good, so move on to getting end address
+00001068                            46          
+00001068                            47  GET_END_ADDR
+00001068  43F9 000012A9             48          LEA     END_ADDR_MES,A1 Print out message that asks user for end address
+0000106E  103C 000E                 49          MOVE.B  #14,D0
+00001072  4E4F                      50          TRAP #15    execute task 14 to display message on screen
+00001074  43F9 00001466             51          LEA     END_INPUT, A1  store end address input into memory
+0000107A  7002                      52          MOVEQ   #2,D0       get ready for task 2 for trap 15
+0000107C  4E4F                      53          TRAP    #15     Execute task 2        
+0000107E  4283                      54          CLR.L   D3      Clears register D3 so ending address can be stored
+00001080  4EB9 000010E4             55          JSR     CORRECT_LENGTH Check to see if number entered is correct length
+00001086  B83C 0001                 56          CMP.B   #1,D4       If D4 equals 1, then entered value is correct length
+0000108A  6700 0010                 57          BEQ     CONTINUE_END_1 If correct, then continue checks with input
+0000108E  43F9 000012D3             58          LEA     FAIL_MESSAGE,A1 Else it failed so send fail message and ask again
+00001094  103C 000E                 59          MOVE.B  #14,D0
+00001098  4E4F                      60          TRAP    #15     Display error message
+0000109A  60CC                      61          BRA     GET_END_ADDR    Get another end address from user
+0000109C                            62          
+0000109C                            63  CONTINUE_END_1 
+0000109C  4EB9 00001100             64          JSR     ASCII_2_HEX    convert ascii to hex value
+000010A2  2843                      65          MOVEA.L D3,A4   Store the ending address into A6 (A5) has start address
+000010A4  4EB9 00001142             66          JSR     ODD_TEST    check to see if end address is odd value
+000010AA  B83C 0001                 67          CMP.B   #1, D4  compares the results. If D4 == 1 then continue  
+000010AE  6700 0004                 68          BEQ     CONTINUE_END_2  results are good, so continue with test
+000010B2  60B4                      69          BRA     GET_END_ADDR    did not pass, so get new end address
+000010B4                            70  
+000010B4                            71  CONTINUE_END_2
+000010B4  2443                      72          MOVEA.L D3, A2
+000010B6  4EB9 00001166             73          JSR     RANGE_TEST  test to see if input is in valid range
+000010BC  B83C 0000                 74          CMP.B   #0,D4    check to see if range test failed
+000010C0  67A6                      75          BEQ     GET_END_ADDR    failed test so get new end address
+000010C2  2843                      76          MOVEA.L D3,A4       input end address passed all tests
+000010C4  4EB9 000011AE             77          JSR     START_VS_END    compares to see if start address is smaller than end address
+000010CA  B83C 0000                 78          CMP.B   #0, D4   check if start< end results
+000010CE  6798                      79          BEQ     GET_END_ADDR    failed test, so get new end address
+000010D0  2843                      80          MOVEA.L D3,A4       input addresses passed all tests
+000010D2  103C 000B                 81          MOVE.B  #11, D0     task that clears screen
+000010D6  323C FF00                 82          MOVE.W  #$FF00, D1  Clears screen when D1 is set to $FF00
+000010DA  4E4F                      83          TRAP    #15
+000010DC                            84  *----------------------------------
+000010DC                            85  *--------Jump to Op code to print all outputs
+000010DC                            86  *------------------------------------    
+000010DC  4EB8 2000                 87          JSR     $2000    
+000010E0  6000 00EC                 88          BRA     ASK_USER_FOR_INPUT
+000010E4                            89  *--------------------------------------------------------------------------------------------- 
+000010E4                            90         
+000010E4                            91  CORRECT_LENGTH *-----Makes sure that the adress is the length of a longword
+000010E4  4284                      92          CLR.L   D4      Clear D4 for new check and store new result
+000010E6  7A00                      93          MOVEQ   #$0,D5  Empty out D5 to see if null input
+000010E8  B205                      94          CMP.B   D5,D1   Check to see if input is null
+000010EA  6700 0010                 95          BEQ     LENGTH_FAIL
+000010EE  0C41 0008                 96          CMPI    #$8,D1  Check to see if input is longer than a longword(8 bytes)
+000010F2  6E00 0008                 97          BGT     LENGTH_FAIL
+000010F6  183C 0001                 98          MOVE.B  #$1, D4     Length is good so give a 1 to tell code that this test pass passes.
+000010FA  4E75                      99          RTS
+000010FC                           100  LENGTH_FAIL
+000010FC  7800                     101          MOVEQ   #$0,D4  tell code it failed(0 is a failed result)
+000010FE  4E75                     102          RTS
+00001100                           103  *-----------------------------------------------------------------------------------------------       
+00001100                           104          
+00001100                           105          
+00001100                           106  ASCII_2_HEX *-------Converts the ascii values to hex number
+00001100  0C01 0000                107          CMPI.B  #$0,D1      Checks to see if all ASCII characters are converted
+00001104  6700 003A                108          BEQ     ALL_CONVERTED        If all ascii characters converted, return to procedure
+00001108  1419                     109          MOVE.B  (A1)+, D2   Move Ascii value in order to be checked
+0000110A  0C02 0039                110          CMPI.B  #$39,D2     Compare and see if Ascii value is number value
+0000110E  6F00 001A                111          BLE     CONVERT_NUMBER  If number do to number, else letter
+00001112  0C02 0046                112          CMPI.B  #$46,D2     See if letter is upper case
+00001116  6F00 000A                113          BLE     CONVERT_LETTER
+0000111A                           114  CONVERT_LOWER_LETTER
+0000111A  0402 0057                115          SUBI.B  #$57,D2     Convert lower case letter to hex value
+0000111E  6000 0012                116          BRA     COUNTER        
+00001122                           117  CONVERT_LETTER
+00001122  0402 0037                118          SUBI.B  #$37, D2    Convert Ascii letter to hex letter
+00001126  6000 000A                119          BRA     COUNTER
+0000112A                           120  CONVERT_NUMBER
+0000112A  0402 0030                121          SUBI.B  #$30, D2    Convert Ascii number to hex number
+0000112E  6000 0002                122          BRA     COUNTER
+00001132                           123  COUNTER
+00001132  5301                     124          SUBI.B  #$1,D1  Decrement counter
+00001134  D602                     125          ADD.B   D2,D3   Add converted hex value to rest of hex values
+00001136  0C01 0000                126          CMPI.B  #$0,D1
+0000113A  67C4                     127          BEQ     ASCII_2_HEX
+0000113C  E99B                     128          ROL.L   #4, D3  
+0000113E  60C0                     129          BRA     ASCII_2_HEX
+00001140                           130  ALL_CONVERTED
+00001140  4E75                     131          RTS
+00001142                           132  *------------------------------------------------------------------------
+00001142                           133  ODD_TEST    *------Checks to see if address is odd, as an odd address will result in memory issues
+00001142  4282                     134          CLR.L   D2  Clear D2 
+00001144  4284                     135          CLR.L   D4  Clear D4 for test result
+00001146                           136          
+00001146  0803 0000                137          BTST    #0,D3   Check to see if last bit is 0
+0000114A  6600 0008                138          BNE     ODD_TEST_FAIL
+0000114E  183C 0001                139          MOVE.B  #$1, D4     Odd test passed so store 1 in D4
+00001152  4E75                     140          RTS
+00001154                           141  ODD_TEST_FAIL
+00001154  43F9 000012FE            142          LEA     ODD_ADDR_MES, A1    Print out odd address error message
+0000115A  103C 000E                143          MOVE.B  #14,D0
+0000115E  4E4F                     144          TRAP    #15
+00001160  7800                     145          MOVEQ   #$0, D4     set result to bad so ask again for address
+00001162  4283                     146          CLR.L   D3      Clear D3 for new address
+00001164  4E75                     147          RTS
+00001166                           148  *---------------------------------------------------------------------------
+00001166                           149  
+00001166                           150  RANGE_TEST  *----------Make sure input is in range of test code
+00001166  4284                     151          CLR.L   D4  Clear D4 for new test result
+00001168  267C 00007000            152          MOVEA.L  #MIN_START_ADDR, A3     Load min start address for comparison
+0000116E  B5CB                     153          CMPA.L  A3,A2   Compare address with min starting addr $7000
+00001170  6D00 0012                154          BLT     TOO_LOW_ERROR
+00001174                           155  CONTINUE_RANGE_TEST        
+00001174  223C 00FFFFFE            156          MOVE.L  #MAX_END_ADDR, D1   Compare address with max addr
+0000117A  B681                     157          CMP.L   D1, D3      Compare
+0000117C  6E00 001C                158          BGT     TOO_HIGH_ERROR  Print out too high error message
+00001180  7801                     159          MOVEQ   #$1, D4     test passed so send good result back
+00001182  4E75                     160          RTS
+00001184                           161  TOO_LOW_ERROR
+00001184  64EE                     162          BCC CONTINUE_RANGE_TEST If carry bit is not set then address is fine
+00001186                           163          
+00001186  43F9 00001359            164          LEA TOO_LOW_MES, A1 Print too low message
+0000118C  103C 000E                165          MOVE.B  #14, D0
+00001190  4E4F                     166          TRAP    #15
+00001192  183C 0000                167          MOVE.B  #$0,D4
+00001196  4283                     168          CLR.L   D3
+00001198  4E75                     169          RTS
+0000119A                           170          
+0000119A                           171  TOO_HIGH_ERROR
+0000119A  43F9 00001359            172          LEA TOO_LOW_MES, A1
+000011A0  103C 000E                173          MOVE.B  #14, D0
+000011A4  4E4F                     174          TRAP    #15
+000011A6  183C 0000                175          MOVE.B  #$0,D4
+000011AA  4283                     176          CLR.L   D3
+000011AC  4E75                     177          RTS
+000011AE                           178  *----------------------------------------------------------------------
+000011AE                           179  START_VS_END
+000011AE  4284                     180          CLR.L   D4  Clear for new check
+000011B0  BE83                     181          CMP.L   D3, D7 Compare the starting address with the ending address
+000011B2  6E00 0006                182          BGT     START_END_ERROR     If start is bigger than end, then error message
+000011B6  7801                     183          MOVEQ   #$1,D4  Start < End so send good response back
+000011B8  4E75                     184          RTS
+000011BA                           185  START_END_ERROR
+000011BA  43F9 0000138C            186          LEA    START_END_MES, A1    Print out error message for end < start
+000011C0  103C 000E                187          MOVE.B  #14,D0
+000011C4  4E4F                     188          TRAP    #15
+000011C6  183C 0000                189          MOVE.B  #$0,D4     Return test failed
+000011CA  4283                     190          CLR.L   D3      Clear address for new address
+000011CC  4E75                     191          RTS
+000011CE                           192  *------------------------------------------------------------------     
+000011CE                           193  ASK_USER_FOR_INPUT
+000011CE  43F9 000013DF            194          LEA     ASK_USER_MES, A1    Ask the user for input from keyboard
+000011D4  103C 000E                195          MOVE.B  #14,D0  
+000011D8  4E4F                     196          TRAP    #15
+000011DA                           197          
+000011DA  103C 000C                198          MOVE.B  #12,D0  Keyboard echo task
+000011DE  123C 0000                199          MOVE.B  #0, D1  Turn off the keyboard echo
+000011E2  4E4F                     200          TRAP    #15     Reset keyboard input for new input by user
+000011E4  103C 0005                201          MOVE.B  #5,D0   Read a single character from the keyboard, and place it into D1
+000011E8  4E4F                     202          TRAP    #15
+000011EA                           203          *Compare values of keyboard to see where to go next
+000011EA  B23C 0051                204          CMP.B   #$51, D1    See if input was Q
+000011EE  6700 0070                205          BEQ     END_PROGRAM     go to end program and quit program
+000011F2  B23C 0071                206          CMP.B   #$71, D1    see if input was q
+000011F6  6700 0068                207          BEQ     END_PROGRAM
+000011FA  B23C 0052                208          CMP.B   #$52,D1     see if input was R
+000011FE  6700 000C                209          BEQ     RESTART_PROGRAM
+00001202  B23C 0072                210          CMP.B   #$72,D1     see if input was r
+00001206  6700 0004                211          BEQ     RESTART_PROGRAM
+0000120A  60C2                     212          BRA     ASK_USER_FOR_INPUT  not good input = retry 
+0000120C                           213          
+0000120C                           214  *------------------------------------------------------
+0000120C                           215  *Restart the program by clearing all register, clear screen, and go back to the beginning of the program
+0000120C                           216  RESTART_PROGRAM
+0000120C  103C 000B                217          MOVE.B  #11, D0     task that clears screen
+00001210  323C FF00                218          MOVE.W  #$FF00, D1  Clears screen when D1 is set to $FF00
+00001214  4E4F                     219          TRAP    #15
+00001216  103C 000C                220          MOVE.B  #12,D0  Allow user to see input being typed
+0000121A  123C 0001                221          MOVE.B  #1,D1   Makes keyboard echo visible to users
+0000121E  4E4F                     222          TRAP    #15
+00001220  4281                     223          CLR.L   D1      clear data register D1
+00001222  4282                     224          CLR.L   D2
+00001224  4283                     225          CLR.L   D3
+00001226  4284                     226          CLR.L   D4
+00001228  4285                     227          CLR.L   D5
+0000122A  4286                     228          CLR.L   D6
+0000122C                           229          *Reset addresses
+0000122C  207C 00000000            230          MOVE.L  #$00000000,A0   Reset A0
+00001232  227C 00000000            231          MOVE.L  #$00000000,A1
+00001238  247C 00000000            232          MOVE.L  #$00000000,A2
+0000123E  267C 00000000            233          MOVE.L  #$00000000,A3
+00001244  287C 00000000            234          MOVE.L  #$00000000,A4
+0000124A  2A7C 00000000            235          MOVE.L  #$00000000,A5
+00001250  2C7C 00000000            236          MOVE.L  #$00000000,A6
+00001256  2E7C 00000000            237          MOVE.L  #$00000000,A7
+0000125C  6000 FDA2                238          BRA     START   Once all cleared, go back to beginning of the program
+00001260                           239          
+00001260                           240  *-----------------------------------------------------------------------------
+00001260                           241  
+00001260                           242  SETUP_FOR_OPCODE
+00001260                           243                 
+00001260                           244          
+00001260                           245          
+00001260                           246          
+00001260                           247          
+00001260                           248  
+00001260                           249  
+00001260                           250  * Put program code here
+00001260                           251  
+00001260                           252  END_PROGRAM
+00001260  FFFF FFFF                253      SIMHALT             ; halt simulator
+00001264                           254  
+00001264                           255  * Put variables and constants here
+00001264  =0000000D                256  CR  EQU $0D
+00001264  =0000000A                257  LF  EQU $0A
+00001264  =00007000                258  MIN_START_ADDR  EQU     $00007000   min starting address
+00001264  =00FFFFFE                259  MAX_END_ADDR    EQU     $00FFFFFE   max ending address
+00001264                           260  
+00001264= 57 65 6C 63 6F 6D ...    261  INTROMESSAGE    DC.B    'Welcome to the decoder',CR,LF,0
+0000127D= 50 6C 65 61 73 65 ...    262  START_ADDR_MES  DC.B    'Please enter a Start Address(CAPS please): ',0
+000012A9= 50 6C 65 61 73 65 ...    263  END_ADDR_MES    DC.B    'Please enter a End Address(CAPS please): ',0
+000012D3= 53 6F 72 72 79 2E ...    264  FAIL_MESSAGE    DC.B    'Sorry. Invalid address. Please try again',CR,LF,0
+000012FE= 53 6F 72 72 79 2E ...    265  ODD_ADDR_MES    DC.B    'Sorry. Odd address. Please try again',CR,LF,0
+00001325= 53 6F 72 72 79 2E ...    266  TOO_HIGH_MES  DC.B    'Sorry. Entered address too high. Please try again',CR,LF,0
+00001359= 53 6F 72 72 79 2E ...    267  TOO_LOW_MES   DC.B    'Sorry. Entered address too low. Please try again',CR,LF,0
+0000138C= 53 6F 72 72 79 2E ...    268  START_END_MES   DC.B    'Sorry. END address smaller then START. Please try again.',CR,LF,0 
+000013C7= 42 6F 74 68 20 76 ...    269  GOOD_MESSAGE    DC.B    'Both values are good!',CR,LF,0
+000013DF                           270  
+000013DF= 50 72 65 73 73 20 ...    271  ASK_USER_MES    DC.B    'Press r to restart, or q to exit the program',CR,LF,0
+0000140E                           272    
+0000140E= 00000001                 273  BAD_BUFFER      DC.L    1
+00001412= 00000001                 274  GOOD_BUFFER     DC.L    1
+00001416                           275  START_INPUT     DS.B    80      Stores the starting address input  
+00001466                           276  END_INPUT       DS.B    80      Stores the end address input 
+000014B6                           277  
+000014B6                           278  
+000014B6                           279      END    START        ; last line of source
+
+No errors detected
+No warnings generated
+
+
+SYMBOL TABLE INFORMATION
+Symbol-name         Value
+-------------------------
+ALL_CONVERTED       1140
+ASCII_2_HEX         1100
+ASK_USER_FOR_INPUT  11CE
+ASK_USER_MES        13DF
+BAD_BUFFER          140E
+CONTINUE_END_1      109C
+CONTINUE_END_2      10B4
+CONTINUE_RANGE_TEST  1174
+CONTINUE_START_1    103E
+CONTINUE_START_2    1056
+CONVERT_LETTER      1122
+CONVERT_LOWER_LETTER  111A
+CONVERT_NUMBER      112A
+CORRECT_LENGTH      10E4
+COUNTER             1132
+CR                  D
+END_ADDR_MES        12A9
+END_INPUT           1466
+END_PROGRAM         1260
+FAIL_MESSAGE        12D3
+GET_END_ADDR        1068
+GET_START_ADDR      100C
+GOOD_BUFFER         1412
+GOOD_MESSAGE        13C7
+INPUT_FAIL          1030
+INTROMESSAGE        1264
+LENGTH_FAIL         10FC
+LF                  A
+MAX_END_ADDR        FFFFFE
+MIN_START_ADDR      7000
+ODD_ADDR_MES        12FE
+ODD_TEST            1142
+ODD_TEST_FAIL       1154
+RANGE_TEST          1166
+RESTART_PROGRAM     120C
+SETUP_FOR_OPCODE    1260
+START               1000
+START_ADDR_MES      127D
+START_END_ERROR     11BA
+START_END_MES       138C
+START_INPUT         1416
+START_VS_END        11AE
+TOO_HIGH_ERROR      119A
+TOO_HIGH_MES        1325
+TOO_LOW_ERROR       1184
+TOO_LOW_MES         1359
