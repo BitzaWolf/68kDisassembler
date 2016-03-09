@@ -2,10 +2,10 @@
 *   Register Assignments
 *   D0
 *   D1
-*   D2  Output Counter (number of lines printed,)
+*   D2  
 *   D3  Word operation read in from memory
-*   D4  Masked op-code (original op-code with a mask applied)
-*   D5  
+*   D4  Output Counter (number of lines printed,)
+*   D5  Masked op-code (original op-code with a mask applied)
 *   D6 
 *   D7   
 *   A0  
@@ -22,7 +22,7 @@
 *   7400: Start of String Pointer (display buffer)
 *-----------------------------------------------------------
 BEGIN               EQU    $7000
-END                 EQU    $7030
+END                 EQU    $7100
 DUKE_EA_FUNCTION    EQU    $3000
 
     ; Fake instructions that will be generated, and then disassembled
@@ -34,9 +34,17 @@ DUKE_EA_FUNCTION    EQU    $3000
     ADDA.W      #$F00F,A6
     ADD.L       D0,A1
     ADDQ        #5,D3
-    ADDQ        #7,$1234
+    ADDQ        #7,$12340FF0
     AND         (A3),D1
     AND         D4,(A1)
+    ASL.W       #3,D5
+    ASL.B       D0,D1
+    ASR.L       #1,D7
+    ASR.L       D1,D0
+    ASL         $1234
+    ASR         $87654321
+    BCC         ZZZZZZZ_END
+    BVS         ZZZZZZZ_END
     MOVE.B      D5,D0
     MOVE.B      (A7),D6
     MOVEA.W     D0,A6
@@ -48,6 +56,7 @@ DUKE_EA_FUNCTION    EQU    $3000
     CLR.B       D2
     MOVEA.W     D0,A6
     MOVEA.L     D1,A0
+ZZZZZZZ_END
     NOP
     
     ; 
@@ -70,50 +79,49 @@ START:                  ; first instruction of program
 
 ; Begin examining op-code ID
 LOOP    MOVE.W  (A6)+,D3    ; Load word-op to disassemble
-        MOVE.W  D3,D4       ; Copy to another location so it's safe to modify
-        ANDI.W  #$F000,D4   ; bitmask it for the last 4 bits (op-code ID)
+        MOVE.W  D3,D5       ; Copy to another location so it's safe to modify
+        ANDI.W  #$F000,D5   ; bitmask it for the last 4 bits (op-code ID)
         
-        CLR     D5
-        CMPI    #$0,D4
+        CMPI    #$0,D5
         BEQ     OP_ID_0
         
-        CMPI    #$1000,D4
+        CMPI    #$1000,D5
         BEQ     OP_ID_1
         
-        CMPI    #$2000,D4
+        CMPI    #$2000,D5
         BEQ     OP_ID_2
         
-        CMPI    #$3000,D4
+        CMPI    #$3000,D5
         BEQ     OP_ID_3
         
-        CMPI    #$4000,D4
+        CMPI    #$4000,D5
         BEQ     OP_ID_4
                 
-        CMPI    #$5000,D4
+        CMPI    #$5000,D5
         BEQ     OP_ID_5
                 
-        CMPI    #$6000,D4
+        CMPI    #$6000,D5
         BEQ     OP_ID_6
                 
-        CMPI    #$7000,D4
+        CMPI    #$7000,D5
         BEQ     OP_ID_7
                 
-        CMPI    #$8000,D4
+        CMPI    #$8000,D5
         BEQ     OP_ID_8
                 
-        CMPI    #$9000,D4
+        CMPI    #$9000,D5
         BEQ     OP_ID_9
                 
-        CMPI    #$B000,D4
+        CMPI    #$B000,D5
         BEQ     OP_ID_B
                 
-        CMPI    #$C000,D4
+        CMPI    #$C000,D5
         BEQ     OP_ID_C
                 
-        CMPI    #$D000,D4
+        CMPI    #$D000,D5
         BEQ     OP_ID_D
                 
-        CMPI    #$E000,D4
+        CMPI    #$E000,D5
         BEQ     OP_ID_E
         
         BRA     BAD_INPUT
@@ -124,18 +132,18 @@ OP_ID_0
         BTST.L  #$08,D3
         BNE     OP_BCHG
         
-        MOVE.W  D3,D4
-        ANDI.W  #$0E00,D4
-        CMPI.W  #$0200,D4
+        MOVE.W  D3,D5
+        ANDI.W  #$0E00,D5
+        CMPI.W  #$0200,D5
         BEQ     OP_ANDI
         
-        CMPI.W  #$0800,D4
+        CMPI.W  #$0800,D5
         BEQ     OP_BCHGI
         
-        CMPI.W  #$0C00,D4
+        CMPI.W  #$0C00,D5
         BEQ     OP_CMPI
         
-        CMPI.W  #$0A00,D4
+        CMPI.W  #$0A00,D5
         BEQ     OP_EORI
         
         BRA     OP_SUBI
@@ -144,16 +152,16 @@ OP_ID_1
         BRA     OP_MOVEB
 
 OP_ID_2
-        MOVE.W  D3,D4
-        ANDI.W  #$01C0,D4
-        CMPI.W  #$0040,D4
+        MOVE.W  D3,D5
+        ANDI.W  #$01C0,D5
+        CMPI.W  #$0040,D5
         BEQ     OP_MOVEAL
         BRA     OP_MOVEL
 
 OP_ID_3
-        MOVE.W  D3,D4
-        ANDI.W  #$01C0,D4
-        CMPI.W  #$0040,D4
+        MOVE.W  D3,D5
+        ANDI.W  #$01C0,D5
+        CMPI.W  #$0040,D5
         BEQ     OP_MOVEAW
         BRA     OP_MOVEW
 
@@ -164,21 +172,21 @@ OP_ID_4
         BTST.L  #11,D3      ; compare the 11th bit to 0
         BEQ     OP_CLR      ; if it's a 0, it's a CLR op-code
         
-        MOVE.W  D3,D4
-        ANDI.W  #$07C0,D4
-        CMPI.W  #$0680,D4
+        MOVE.W  D3,D5
+        ANDI.W  #$07C0,D5
+        CMPI.W  #$0680,D5
         BEQ     OP_JSR
         
-        CMPI.W  #$0080,D4
+        CMPI.W  #$0080,D5
         BEQ     OP_MOVEMW_FROM
         
-        CMPI.W  #$00C0,D4
+        CMPI.W  #$00C0,D5
         BEQ     OP_MOVEML_FROM
         
-        CMPI.W  #$0480,D4
+        CMPI.W  #$0480,D5
         BEQ     OP_MOVEMW_TO
         
-        CMPI.W  #$04C0,D4
+        CMPI.W  #$04C0,D5
         BEQ     OP_MOVEML_TO
         
         CMPI.W  #$4E71,D3
@@ -190,15 +198,15 @@ OP_ID_5
         BRA     OP_ADDQ
 
 OP_ID_6 
-        MOVE.W  D3,D4
-        ANDI.W  #$0F00,D4
-        CMPI.W  #$0400,D4
+        MOVE.W  D3,D5
+        ANDI.W  #$0F00,D5
+        CMPI.W  #$0400,D5
         BEQ     OP_BCC
         
-        CMPI.W  #$0E00,D4
+        CMPI.W  #$0E00,D5
         BEQ     OP_BGT
         
-        CMPI.W  #$0F00,D4
+        CMPI.W  #$0F00,D5
         BEQ     OP_BLE
         
         BRA     OP_BVS
@@ -210,9 +218,9 @@ OP_ID_8
         BRA     OP_DIVSW
 
 OP_ID_9
-        MOVE.W  D3,D4
-        ANDI.W  #$00C0,D4
-        CMPI.W  #$00C0,D4
+        MOVE.W  D3,D5
+        ANDI.W  #$00C0,D5
+        CMPI.W  #$00C0,D5
         BEQ     OP_SUBA
         BRA     OP_SUB
 
@@ -220,46 +228,48 @@ OP_ID_B
         BTST.L  #$08,D3
         BNE     OP_EOR
         
-        MOVE.W  D3,D4
-        ANDI.W  #$00C0,D4
-        CMPI.W  #$00C0,D4
+        MOVE.W  D3,D5
+        ANDI.W  #$00C0,D5
+        CMPI.W  #$00C0,D5
         BEQ     OP_CMPA
         
         BRA     OP_CMP
 
 OP_ID_C 
-        BTST.L  #$08,D3
-        BNE     OP_MULS
+        MOVE.W  D3,D5
+        ANDI.W  #$00C0,D5
+        CMPI.W  #$00C0,D5
+        BEQ     OP_MULS
         BRA     OP_AND
 
 OP_ID_D
-        MOVE.W  D3,D4
-        ANDI.W  #$00C0,D4
-        CMPI.W  #$00C0,D4
+        MOVE.W  D3,D5
+        ANDI.W  #$00C0,D5
+        CMPI.W  #$00C0,D5
         BEQ     OP_ADDA
         BRA     OP_ADD
 
 OP_ID_E 
-        MOVE.W  D3,D4
-        ANDI.W  #$00C0,D4
-        CMPI.W  #$00C0,D4
+        MOVE.W  D3,D5
+        ANDI.W  #$00C0,D5
+        CMPI.W  #$00C0,D5
         BEQ     OP_ID_E_PART2
         
-        MOVE.W  D3,D4
-        ANDI.W  #$0038,D4
-        CMPI.W  #$0000,D4
+        MOVE.W  D3,D5
+        ANDI.W  #$0038,D5
+        CMPI.W  #$0000,D5
         BEQ     OP_ASD_I
         
-        CMPI.W  #$0008,D4
+        CMPI.W  #$0008,D5
         BEQ     OP_LSD_I
         
-        CMPI.W  #$0018,D4
+        CMPI.W  #$0018,D5
         BEQ     OP_ROD_I
         
-        CMPI.W  #$0020,D4
+        CMPI.W  #$0020,D5
         BEQ     OP_ASD_D
         
-        CMPI.W  #$0028,D4
+        CMPI.W  #$0028,D5
         BEQ     OP_LSD_D
         
         BRA     OP_ROD_D
@@ -277,18 +287,18 @@ LOOP_END
         TRAP    #15
         
         MOVEA.L #STRING_PTR,A5
-        ADDQ.B  #1,D2 ; Increment output counter
+        ADDQ.B  #1,D4 ; Increment output counter
         
         CMPA.L  A4,A6
-        BEQ     Z_END
+        BGE     Z_END
         
-        CMP.B   #30,D2
+        CMP.B   #30,D4
         BEQ     QUERY_CONTINUE
                 
         BRA     LOOP
         
 QUERY_CONTINUE
-        MOVE.B  #0,D2
+        MOVE.B  #0,D4
         LEA     TXT_QUERY,A1
         MOVE.L  #14,D0
         TRAP    #15
@@ -302,9 +312,9 @@ QUERY_CONTINUE
 ;----------------------------------------------------------------------
 OP_ADD
         ; Verify
-        MOVE.W  D3,D4
-        ANDI.W  #$00C0,D4 ; Unknown size '11'
-        CMPI.W  #$00C0,D4
+        MOVE.W  D3,D5
+        ANDI.W  #$00C0,D5 ; Unknown size '11'
+        CMPI.W  #$00C0,D5
         BEQ     BAD_INPUT
         
         JSR     PRINT_ADDRESS
@@ -318,12 +328,12 @@ OP_ADD
 OP_ADD_SOURCE
         ; ADD Dn,<ea>
         MOVE.B  #'D',(A5)+
-        MOVE.W  D3,D4
-        ANDI.W  #$0E00,D4
+        MOVE.W  D3,D5
+        ANDI.W  #$0E00,D5
         MOVE.W  #9,D0
-        LSR.W   D0,D4
-        ADD.B   #$30,D4
-        MOVE.B  D4,(A5)+
+        LSR.W   D0,D5
+        ADD.B   #$30,D5
+        MOVE.B  D5,(A5)+
         
         MOVE.B  #',',(A5)+
         
@@ -344,20 +354,20 @@ OP_ADD_DEST
         MOVE.B  #',',(A5)+
         
         MOVE.B  #'D',(A5)+
-        MOVE.W  D3,D4
-        ANDI.W  #$0E00,D4
+        MOVE.W  D3,D5
+        ANDI.W  #$0E00,D5
         MOVE.W  #9,D0
-        LSR.W   D0,D4
-        ADD.B   #$30,D4
-        MOVE.B  D4,(A5)+
+        LSR.W   D0,D5
+        ADD.B   #$30,D5
+        MOVE.B  D5,(A5)+
         
         BRA     LOOP_END
         
 OP_ADDA
         ; Verify
-        MOVE.W  D3,D4
-        ANDI.W  #$00C0,D4 ; Size must be 11
-        CMPI.W  #$00C0,D4
+        MOVE.W  D3,D5
+        ANDI.W  #$00C0,D5 ; Size must be 11
+        CMPI.W  #$00C0,D5
         BNE     BAD_INPUT
         
         JSR     PRINT_ADDRESS
@@ -384,19 +394,19 @@ OP_ADDA_END
         MOVE.B  #',',(A5)+
         
         MOVE.B  #'A',(A5)+
-        MOVE.W  D3,D4
-        ANDI.W  #$0E00,D4
+        MOVE.W  D3,D5
+        ANDI.W  #$0E00,D5
         MOVE.B  #9,D0
-        LSR.W   D0,D4
-        ADD.W   #$30,D4
-        MOVE.B  D4,(A5)+
+        LSR.W   D0,D5
+        ADD.W   #$30,D5
+        MOVE.B  D5,(A5)+
         
         BRA     LOOP_END
         
 OP_ADDQ
-        MOVE.W  D3,D4
-        ANDI.W  #$00C0,D4
-        CMPI.W  #$00C0,D4
+        MOVE.W  D3,D5
+        ANDI.W  #$00C0,D5
+        CMPI.W  #$00C0,D5
         BEQ     BAD_INPUT
         
         JSR     PRINT_ADDRESS
@@ -405,12 +415,12 @@ OP_ADDQ
         JSR     PRINT_SIZE
         
         MOVE.B  #'#',(A5)+
-        MOVE.W  D3,D4
-        ANDI.W  #$0E00,D4
+        MOVE.W  D3,D5
+        ANDI.W  #$0E00,D5
         MOVE.B  #9,D0
-        LSR.B   D0,D4
-        ADDI.B  #$30,D4
-        MOVE.B  D4,(A5)+
+        LSR.W   D0,D5
+        ADDI.B  #$30,D5
+        MOVE.B  D5,(A5)+
         
         MOVE.B  #',',(A5)+
         
@@ -425,9 +435,9 @@ OP_ADDQ
         BRA     LOOP_END
         
 OP_AND
-        MOVE.W  D3,D4
-        ANDI.W  #$00C0,D4
-        CMPI.W  #$00C0,D4
+        MOVE.W  D3,D5
+        ANDI.W  #$00C0,D5
+        CMPI.W  #$00C0,D5
         BEQ     BAD_INPUT ; Size '11' illegal
         
         JSR     PRINT_ADDRESS
@@ -476,28 +486,200 @@ OP_AND_DEST
         BRA     LOOP_END
         
 OP_ANDI
+        MOVE.W  D3,D5
+        ANDI.W  #$FF00,D5
+        CMPI.W  #$0200,D5
+        BNE     BAD_INPUT
+        
+        MOVE.W  D3,D5
+        ANDI.W  #$00C0,D5
+        CMPI.W  #$00C0,D5
+        BEQ     BAD_INPUT
+        
+        JSR     PRINT_ADDRESS
+        LEA     TXT_OP_ANDI,A1
+        JSR     APPEND_STRING
+        JSR     PRINT_SIZE
+        MOVE.B  #'#',(A5)+
+        MOVE.B  #'$',(A5)+
+        
+        CMPI.W  #$0080,D5
+        BEQ     OP_ANDI_L
+        
+        MOVE.W  (A6)+,D0
+        MOVE.L  #0,D7
+        CMPI.W  #$0040,D5
+        BEQ     OP_ANDI_W
+        BRA     OP_ANDI_B
+        
+OP_ANDI_L
+        MOVE.L  (A6)+,D0
+        JSR     PRINT_HEX_LONG
+        BRA     OP_ANDI_END
+        
+OP_ANDI_W
+        JSR     PRINT_HEX_WORD
+        BRA     OP_ANDI_END
+        
+OP_ANDI_B
+        JSR     PRINT_HEX_BYTE
+        MOVE.L  #$10,D7
+        
+OP_ANDI_END
+        MOVE.B  #',',(A5)+
+        MOVE.W  D3,D5
+        ANDI.W  #$003F,D5
+        MOVE.L  #1,D6
+        JSR     DUKE_EA_FUNCTION
+        
         BRA     LOOP_END 
         
 OP_ASD_D
+        JSR     PRINT_ADDRESS
+        
+        BTST.L  #8,D3
+        BEQ     OP_ASR_D
+        BRA     OP_ASL_D
+        
+OP_ASL_D
+        LEA     TXT_OP_ASL,A1
+        BRA     OP_ASD_D_END
+        
+OP_ASR_D
+        LEA     TXT_OP_ASR,A1
+        
+OP_ASD_D_END
+        JSR     APPEND_STRING
+        MOVE.W  D3,D5
+        ANDI.W  #$00C0,D5
+        JSR     PRINT_SIZE
+        
+        MOVE.B  #'D',(A5)+
+        MOVE.W  D3,D0
+        ANDI.W  #$0E00,D0
+        MOVE.B  #9,D1
+        LSR.W   D1,D0
+        ADD.B  #$30,D0
+        MOVE.B  D0,(A5)+
+        
+        MOVE.B  #',',(A5)+
+        MOVE.B  #'D',(A5)+
+        MOVE.W  D3,D0
+        ANDI.W  #$0007,D0
+        ADD.B  #$30,D0
+        MOVE.B  D0,(A5)+
+        
         BRA     LOOP_END
         
 OP_ASD_I
+        JSR     PRINT_ADDRESS
+        
+        BTST.L  #8,D3
+        BEQ     OP_ASR_I
+        BRA     OP_ASL_I
+        
+OP_ASL_I
+        LEA     TXT_OP_ASL,A1
+        BRA     OP_ASD_I_END
+        
+OP_ASR_I
+        LEA     TXT_OP_ASR,A1
+        
+OP_ASD_I_END
+        JSR     APPEND_STRING
+        MOVE.W  D3,D5
+        ANDI.W  #$00C0,D5
+        JSR     PRINT_SIZE
+        
+        MOVE.B  #'#',(A5)+
+        MOVE.W  D3,D0
+        ANDI.W  #$0E00,D0
+        MOVE.B  #9,D1
+        LSR.W   D1,D0
+        ADD.B  #$30,D0
+        MOVE.B  D0,(A5)+
+        
+        MOVE.B  #',',(A5)+
+        MOVE.B  #'D',(A5)+
+        MOVE.W  D3,D0
+        ANDI.W  #$0007,D0
+        ADD.B  #$30,D0
+        MOVE.B  D0,(A5)+
         BRA     LOOP_END
         
 OP_ASD_EA
+        JSR     PRINT_ADDRESS
+        
+        BTST.L  #8,D3
+        BEQ     OP_ASR_EA
+        BRA     OP_ASL_EA
+        
+OP_ASL_EA
+        LEA     TXT_OP_ASL_EA,A1
+        BRA     OP_ASD_EA_END
+        
+OP_ASR_EA
+        LEA     TXT_OP_ASR_EA,A1
+        
+OP_ASD_EA_END
+        JSR     APPEND_STRING
+        
+        MOVE.W  D3,D5
+        ANDI.W  #$003F,D5
+        MOVE.L  #1,D6
+        MOVE.L  #0,D7
+        JSR     DUKE_EA_FUNCTION
+        
         BRA     LOOP_END
         
 OP_BCC
+        JSR     PRINT_ADDRESS
+        LEA     TXT_OP_BCC,A1
+        JSR     APPEND_STRING
+        
+OP_BCC_COMMON
+        MOVE.L  A6,D0
+        MOVE.W  D3,D5
+        ANDI.W  #$00FF,D5
+        CMPI.W  #$0000,D5
+        BEQ     OP_BCC_2BYTE_DISPLACE
+        CMPI.W  #$00FF,D5
+        BEQ     OP_BCC_4BYTE_DISPLACE
+        
+        ;1 BYTE DISPLACE
+        MOVE.W  D5,D1
+        BRA     OP_BCC_END
+        
+OP_BCC_2BYTE_DISPLACE
+        MOVE.W  (A6)+,D1
+        BRA     OP_BCC_END
+        
+OP_BCC_4BYTE_DISPLACE
+        MOVE.L  (A6)+,D1
+        
+OP_BCC_END
+        ADD.L   D1,D0
+        JSR     PRINT_HEX_LONG
+        
         BRA     LOOP_END
         
 OP_BGT
-        BRA     LOOP_END
+        JSR     PRINT_ADDRESS
+        LEA     TXT_OP_BGT,A1
+        JSR     APPEND_STRING
+        BRA     OP_BCC_COMMON
         
 OP_BLE
-        BRA     LOOP_END
+        JSR     PRINT_ADDRESS
+        LEA     TXT_OP_BLE,A1
+        JSR     APPEND_STRING
+        BRA     OP_BCC_COMMON
         
 OP_BVS
-        BRA     LOOP_END
+        JSR     PRINT_ADDRESS
+        LEA     TXT_OP_BVS,A1
+        JSR     APPEND_STRING
+        BRA     OP_BCC_COMMON
         
 OP_BCHG
         BRA     LOOP_END
@@ -507,15 +689,15 @@ OP_BCHGI
 
 OP_CLR   
         ; Verify it's a CLR instruction
-        MOVE.W  D3,D4
-        ANDI.W  #$FF00,D4
-        CMPI.W  #$4200,D4
+        MOVE.W  D3,D5
+        ANDI.W  #$FF00,D5
+        CMPI.W  #$4200,D5
         BNE     BAD_INPUT
         
         ; CLR cannot have bits 6 and 7 set to 11
-        MOVE.W  D3,D4
-        ANDI.W  #$00C0,D4
-        CMPI.W  #$00C0,D4
+        MOVE.W  D3,D5
+        ANDI.W  #$00C0,D5
+        CMPI.W  #$00C0,D5
         BEQ     BAD_INPUT
         
         ; Print instructions
@@ -554,9 +736,9 @@ OP_JSR
 
 OP_LEA
         ; Veriy it's LEA
-        MOVE.W  D3,D4
-        ANDI.W  #$F1C0,D4
-        CMPI.W  #$41C0,D4
+        MOVE.W  D3,D5
+        ANDI.W  #$F1C0,D5
+        CMPI.W  #$41C0,D5
         BNE     BAD_INPUT
         
         ; Print
@@ -574,12 +756,12 @@ OP_LEA
         MOVE.B  #'A',(A5)+
         
         ; Print Address Register
-        MOVE.W  D3,D4
-        ANDI.W  #$0E00,D4
+        MOVE.W  D3,D5
+        ANDI.W  #$0E00,D5
         MOVE.B  #9,D0
-        LSR.W   D0,D4
-        ADD.W   #$30,D4
-        MOVE.B  D4,(A5)+
+        LSR.W   D0,D5
+        ADD.W   #$30,D5
+        MOVE.B  D5,(A5)+
         
         BRA     LOOP_END
         
@@ -603,9 +785,9 @@ OP_MOVEAW
 
 OP_MOVEB
         ; Verify
-        MOVE.W  D3,D4
-        ANDI.W  #$F000,D4
-        CMPI.W  #$1000,D4
+        MOVE.W  D3,D5
+        ANDI.W  #$F000,D5
+        CMPI.W  #$1000,D5
         BNE     BAD_INPUT
         
         ; Print
@@ -691,25 +873,8 @@ BAD_INPUT
         LEA     TXT_DATA,A1
         JSR     APPEND_STRING
         
-        ; Print op-code data as hex
-        ROL.W   #4,D3
-        MOVE.L  D3,D1
-        MOVE.L  #4,D2 ; Loop counter. Run 4 times.
-        
-PRINT_OP_HEX_LOOP
-        ANDI.W  #$000F,D1
-        CMPI.B  #$0A,D1
-        BLT     PRINT_OP_HEX_DECIMAL
-        ADDI.B  #$7,D1
-        
-PRINT_OP_HEX_DECIMAL
-        ADDI.B  #$30,D1
-        MOVE.B  D1,(A5)+
-        ROL.W   #4,D3
-        MOVE.W  D3,D1
-        SUBI.B  #1,D2
-        CMPI.L  #0,D2
-        BNE     PRINT_OP_HEX_LOOP
+        MOVE.W  D3,D0
+        JSR     PRINT_HEX_WORD
         
         BRA     LOOP_END
 
@@ -721,30 +886,70 @@ PRINT_OP_HEX_DECIMAL
 PRINT_ADDRESS
         MOVEM.L D0-D2,-(SP)
         
-        MOVE.L  A6,D0 ; Move op-code address to D0
-        SUBI.L  #2,D0 ; Subtract 2 because pointer is to next op-code
-        ROL.L   #4,D0
-        MOVE.L  D0,D1
-        MOVE.B  #8,D2 ; Loop counter. Run 8 times.
-        
-PRINT_ADDRESS_LOOP
-        ANDI.L  #$0000000F,D1
-        CMPI.B  #$0A,D1
-        BLT     PRINT_ADDRESS_DECIMAL
-        ADDI.B  #$7,D1
-        
-PRINT_ADDRESS_DECIMAL
-        ADDI.B  #$30,D1
-        MOVE.B  D1,(A5)+ ; Write char to string
-        ROL.L   #4,D0
-        MOVE.L  D0,D1
-        SUBI.B  #1,D2 ; check loop condition
-        CMPI.L  #0,D2
-        BNE     PRINT_ADDRESS_LOOP
-        
-        MOVE.B  #$20,(A5)+ ; Write ' ' to string
+        MOVE.L  A6,D0           ; Move op-code address to D0
+        SUBI.L  #2,D0           ; Subtract 2 because pointer is to next op-code
+        JSR     PRINT_HEX_LONG
+        MOVE.B  #' ',(A5)+
         
         MOVEM.L (SP)+,D0-D2
+        RTS
+        
+;--------------------------------------------------
+; Prints the byte hex digits in D0
+; Specifically, the least significant 8 bits.
+;--------------------------------------------------
+PRINT_HEX_BYTE
+        MOVEM.L D0-D2,-(SP)
+        
+        CLR.L   D1
+        MOVE.L  #2,D2
+        
+PRINT_HEX_BYTE_LOOP
+        ROL.B   #4,D0
+        MOVE.B  D0,D1
+        ANDI.B  #$0F,D1
+        CMPI.B  #$0A,D1
+        BLT     PRINT_HEX_BYTE_DECIMAL
+        ADDI.B  #$7,D1
+        
+PRINT_HEX_BYTE_DECIMAL
+        ADDI.B  #$30,D1
+        MOVE.B  D1,(A5)+
+        SUBI.B  #1,D2
+        CMPI.L  #0,D2
+        BNE     PRINT_HEX_BYTE_LOOP
+        
+        MOVEM.L (SP)+,D0-D2
+        RTS
+        
+;--------------------------------------------------
+; Prints the word hex digits in D0
+; Specifically, the least significant 16 bits.
+;--------------------------------------------------
+PRINT_HEX_WORD
+        MOVE.L  D0,-(SP)
+        
+        ROL.W   #8,D0
+        JSR     PRINT_HEX_BYTE
+        ROL.W   #8,D0
+        JSR     PRINT_HEX_BYTE
+        
+        MOVE.L  (SP)+,D0
+        RTS
+        
+;--------------------------------------------------
+; Prints the word hex digits in D0
+; Specifically, the least significant 16 bits.
+;--------------------------------------------------
+PRINT_HEX_LONG
+        MOVE.L  D0,-(SP)
+        
+        SWAP    D0
+        JSR     PRINT_HEX_WORD
+        SWAP    D0
+        JSR     PRINT_HEX_WORD
+        
+        MOVE.L  (SP)+,D0
         RTS
 
 ;--------------------------------------------------
@@ -760,13 +965,13 @@ APPEND_STRING
 
 ;--------------------------------------------------
 ; Prints the character B, W, or L depending on the
-; value in D4.
+; value in D5.
 ; $0000 = B     $0040 = W   anything else = L
 ;--------------------------------------------------
 PRINT_SIZE
-        CMPI.W  #$0000,D4
+        CMPI.W  #$0000,D5
         BEQ     PRINT_SIZE_B
-        CMPI.W  #$0040,D4
+        CMPI.W  #$0040,D5
         BEQ     PRINT_SIZE_W
         BRA     PRINT_SIZE_L
 
@@ -813,6 +1018,8 @@ TXT_OP_AND      DC.B    'AND.',0
 TXT_OP_ANDI     DC.B    'ANDI.',0
 TXT_OP_ASL      DC.B    'ASL.',0
 TXT_OP_ASR      DC.B    'ASR.',0
+TXT_OP_ASL_EA   DC.B    'ASL ',0
+TXT_OP_ASR_EA   DC.B    'ASR ',0
 TXT_OP_BCC      DC.B    'BCC ',0
 TXT_OP_BGT      DC.B    'BGT ',0
 TXT_OP_BLE      DC.B    'BLE ',0
@@ -849,6 +1056,7 @@ TXT_QUERY       DC.B    '(Press Enter to continue)',0
 TXT_DEFAULT_EA  DC.B    'XXXXXX',0
 STRING_PTR      DC.B    0
     END    START        ; last line of source
+
 
 
 

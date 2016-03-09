@@ -17,13 +17,11 @@ GETPREV
             BRA         DONE            at end of program
 
 LONGTOASCII
-            MOVE.B      #'$',(A5)+
             MOVE.L      (A6),D0         Move data to temporary data register as Long
             MOVE.B      #0,D3           Let HEXTOASCII know if 0 = Long or 1 = Word
             JSR         HEXTOASCII      Convert Hex to ASCII
             RTS
 WORDTOASCII
-            MOVE.B      #'$',(A5)+
             MOVE.W      (A6),D0         Move data to temporary data register as Word
             MOVE.B      #1,D3
             JSR         HEXTOASCII
@@ -191,10 +189,12 @@ DATAMODE
             CMP.B       #4,D4           Register 4 thus a #<data> (determined by OpSize)
             BEQ         FOURMODE
             
-ZEROMODE    JSR         WORDTOASCII     Convert Word data to ASCII and store
+ZEROMODE    MOVE.B      #'$',(A5)+
+            JSR         WORDTOASCII     Convert Word data to ASCII and store
             MOVE.W      (A6)+,D5        Get ready for next data
             BRA         COMPLETE
-ONEMODE     JSR         LONGTOASCII     Convert Long data to ASCII and store
+ONEMODE     MOVE.B      #'$',(A5)+
+            JSR         LONGTOASCII     Convert Long data to ASCII and store
             MOVE.L      (A6)+,D5
             BRA         COMPLETE
 FOURMODE    MOVE.B      #'#',(A5)+      #<data> mode, must be hex:
@@ -233,6 +233,8 @@ LF          EQU         $0A
 DISPERROR   DC.B        'GENERAL EA ERROR',CR,LF,0
 
             END         START           ; last line of source
+
+
 
 
 *~Font name~Courier New~
