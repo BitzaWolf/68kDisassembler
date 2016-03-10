@@ -5,15 +5,15 @@
 * Description: Effective Addressing part of 68K Disassembler
 *              (OpCode = Anthony, I/O = Mark, EA = Duke)
 *-----------------------------------------------------------
-            ORG         $3500
+            ORG         $3400
 ************************************************************
 *                     HELPER FUNCTIONS                     *
 ************************************************************
 SETPREV
-            MOVEM.L     D0-D7,-(SP)     Save data to stack so not to affect I/O or OpCode:
+            MOVEM.L     D0-D6,-(SP)     Save data to stack so not to affect I/O or OpCode:
             BRA         HEXTOOCT        at beginning of program
 GETPREV
-            MOVEM.L     (SP)+,D0-D7     Get data from stack for original datas:
+            MOVEM.L     (SP)+,D0-D6     Get data from stack for original datas:
             BRA         DONE            at end of program
 
 LONGTOASCII
@@ -47,8 +47,8 @@ DONTPRINT   ROL.L		#4,D0           Next number
 		    CMPI.L		#0,D2           Exit if all 8 bytes checked
 		    BNE		    STOREHEX        Otherwise continue
 		    RTS
-
-            ORG         $3000
+		    
+            ORG         $3600
 START:                                  ; first instruction of program
 
 ****************** Testing example for EA ******************     ------------------- TESTING
@@ -188,6 +188,10 @@ DATAMODE
             BEQ         ONEMODE
             CMP.B       #4,D4           Register 4 thus a #<data> (determined by OpSize)
             BEQ         FOURMODE
+            CMP.B       #2,D4           Register 2 thus not used in project thus ERROR
+            BEQ         ERROR
+            CMP.B       #3,D4           Register 3 thus not used in project thus ERROR
+            BEQ         ERROR
             
 ZEROMODE    MOVE.B      #'$',(A5)+
             JSR         WORDTOASCII     Convert Word data to ASCII and store
@@ -214,11 +218,11 @@ FOURMODELNG
 * EA Error Handling                                        *
 ************************************************************
 ERROR
-            LEA         DISPERROR,A1    Display general error
-            MOVE.B      #14,D0
-            TRAP        #15
-            MOVE.B      'F',(A5)        Store FF meaning there has been an error:
-            MOVE.B      'F',(A5)        since FF is default in memory
+            *LEA         DISPERROR,A1    Display general error
+            *MOVE.B      #14,D0
+            *TRAP        #15
+            MOVE.B      'F',D7          Store FF meaning there has been an error:
+            MOVE.B      'F',D7          since FF is default in memory GIVE TO OPCODE (ANTHONY)
             BRA         COMPLETE        EA complete so finishing with EA
             
 COMPLETE
@@ -233,6 +237,8 @@ LF          EQU         $0A
 DISPERROR   DC.B        'GENERAL EA ERROR',CR,LF,0
 
             END         START           ; last line of source
+
+
 
 
 
