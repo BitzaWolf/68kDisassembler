@@ -45,6 +45,12 @@ DUKE_EA_FUNCTION    EQU    $3000
     ASR         $87654321
     BCC         ZZZZZZZ_END
     BVS         ZZZZZZZ_END
+    BCHG        D3,(A7)
+    BCHG        #16,$4444
+    CMP         #$A0,D1
+    CMP         D5,D4
+    CMPA.W      #$FFFF,A3
+    CMPA.L      A4,A7
     MOVE.B      D5,D0
     MOVE.B      (A7),D6
     MOVEA.W     D0,A6
@@ -682,9 +688,53 @@ OP_BVS
         BRA     OP_BCC_COMMON
         
 OP_BCHG
+        MOVE.W  D3,D5
+        ANDI.W  #$F1C0,D5
+        CMPI.W  #$0140,D5
+        BNE     BAD_INPUT
+        
+        JSR     PRINT_ADDRESS
+        LEA     TXT_OP_BCHG,A1
+        JSR     APPEND_STRING
+        MOVE.B  #'D',(A5)+
+        
+        MOVE.W  D3,D5
+        ANDI.W  #$0E00,D5
+        MOVE.B  #9,D0
+        LSR.W   D0,D5
+        ADD.W   #$30,D5
+        MOVE.B  D5,(A5)+
+        MOVE.B  #',',(A5)+
+        
+        MOVE.W  D3,D5
+        ANDI.W  #$003F,D5
+        MOVE.L  #1,D6
+        MOVE.L  #0,D7
+        JSR     DUKE_EA_FUNCTION
+        
         BRA     LOOP_END
         
 OP_BCHGI
+        MOVE.W  D3,D5
+        ANDI.W  #$FFC0,D5
+        CMPI.W  #$0840,D5
+        BNE     BAD_INPUT
+        
+        JSR     PRINT_ADDRESS
+        LEA     TXT_OP_BCHG,A1
+        JSR     APPEND_STRING
+        MOVE.B  #'#',(A5)+
+        MOVE.B  #'$',(A5)+
+        MOVE.W  (A6)+,D0
+        JSR     PRINT_HEX_WORD
+        MOVE.B  #',',(A5)+
+        
+        MOVE.W  D3,D5
+        ANDI.W  #$003F,D5
+        MOVE.L  #1,D6
+        MOVE.L  #0,D7
+        JSR     DUKE_EA_FUNCTION
+        
         BRA     LOOP_END
 
 OP_CLR   
@@ -714,9 +764,67 @@ OP_CLR
         BRA     LOOP_END
         
 OP_CMP
+        MOVE.W  D3,D5
+        ANDI.W  #$00C0,D5
+        CMPI.W  #$00C0,D5
+        BEQ     BAD_INPUT
+        
+        JSR     PRINT_ADDRESS
+        LEA     TXT_OP_CMP,A1
+        JSR     APPEND_STRING
+        JSR     PRINT_SIZE
+        
+        MOVE.W  D3,D5
+        MOVE.L  #1,D6
+        ANDI.W  #$003F,D5
+        JSR     DUKE_EA_FUNCTION
+        
+        MOVE.B  #',',(A5)+
+        MOVE.B  #'D',(A5)+
+        MOVE.W  D3,D5
+        ANDI.W  #$0E00,D5
+        MOVE.B  #9,D0
+        LSR.W   D0,D5
+        ADD     #$30,D5
+        MOVE.B  D5,(A5)+
+        
         BRA     LOOP_END
         
 OP_CMPA
+        MOVE.W  D3,D5
+        ANDI.W  #$00C0,D5
+        CMPI.W  #$00C0,D5
+        BNE     BAD_INPUT
+        
+        JSR     PRINT_ADDRESS
+        BTST.L  #8,D3
+        BNE     OP_CMPA_L
+        
+OP_CMPA_W
+        LEA     TXT_OP_CMPAW,A1
+        BRA     OP_CMPA_END
+        
+OP_CMPA_L
+        LEA     TXT_OP_CMPAL,A1
+        
+OP_CMPA_END
+        JSR     APPEND_STRING
+        
+        MOVE.W  D3,D5
+        MOVE.L  #1,D6
+        MOVE.L  #$11,D7
+        ANDI.W  #$003F,D5
+        JSR     DUKE_EA_FUNCTION
+        
+        MOVE.B  #',',(A5)+
+        MOVE.B  #'A',(A5)+
+        MOVE.W  D3,D5
+        ANDI.W  #$0E00,D5
+        MOVE.B  #9,D0
+        LSR.W   D0,D5
+        ADD     #$30,D5
+        MOVE.B  D5,(A5)+
+        
         BRA     LOOP_END
         
 OP_CMPI
@@ -1056,6 +1164,7 @@ TXT_QUERY       DC.B    '(Press Enter to continue)',0
 TXT_DEFAULT_EA  DC.B    'XXXXXX',0
 STRING_PTR      DC.B    0
     END    START        ; last line of source
+
 
 
 
