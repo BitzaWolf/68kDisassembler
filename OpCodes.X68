@@ -1666,7 +1666,7 @@ PRINT_ADDRESS
         MOVE.L  A6,D0           ; Move op-code address to D0
         SUBI.L  #2,D0           ; Subtract 2 because pointer is to next op-code
         JSR     PRINT_HEX_LONG
-        MOVE.B  #' ',(A5)+
+        MOVE.L  #'    ',(A5)+
         
         MOVEM.L (SP)+,D0-D2
         RTS
@@ -1764,7 +1764,9 @@ PRINT_SIZE_L
         MOVE.B  #$4C,(A5)+
 
 PRINT_SIZE_END
-        MOVE.B  #$20,(A5)+
+        MOVE.B  #' ',(A5)+
+        MOVE.B  #' ',(A5)+
+        MOVE.B  #' ',(A5)+
         RTS
         
 
@@ -1874,7 +1876,7 @@ Z_END
 ;----------------------------------------------------------------------
 ; End of memory variables and constants
 ;----------------------------------------------------------------------
-TXT_DATA        DC.B    'DATA ',0
+TXT_DATA        DC.B    'DATA    ',0
 TXT_OP_ADD      DC.B    'ADD.',0
 TXT_OP_ADDA     DC.B    'ADDA.',0
 TXT_OP_ADDQ     DC.B    'ADDQ.',0
@@ -1882,39 +1884,39 @@ TXT_OP_AND      DC.B    'AND.',0
 TXT_OP_ANDI     DC.B    'ANDI.',0
 TXT_OP_ASL      DC.B    'ASL.',0
 TXT_OP_ASR      DC.B    'ASR.',0
-TXT_OP_ASL_EA   DC.B    'ASL ',0
-TXT_OP_ASR_EA   DC.B    'ASR ',0
-TXT_OP_BCC      DC.B    'BCC ',0
-TXT_OP_BGT      DC.B    'BGT ',0
-TXT_OP_BLE      DC.B    'BLE ',0
-TXT_OP_BVS      DC.B    'BVS ',0
-TXT_OP_BCHG     DC.B    'BCHG ',0
+TXT_OP_ASL_EA   DC.B    'ASL     ',0
+TXT_OP_ASR_EA   DC.B    'ASR     ',0
+TXT_OP_BCC      DC.B    'BCC     ',0
+TXT_OP_BGT      DC.B    'BGT     ',0
+TXT_OP_BLE      DC.B    'BLE     ',0
+TXT_OP_BVS      DC.B    'BVS     ',0
+TXT_OP_BCHG     DC.B    'BCHG    ',0
 TXT_OP_CLR      DC.B    'CLR.',0
 TXT_OP_CMP      DC.B    'CMP.',0
-TXT_OP_CMPAW    DC.B    'CMPA.W ',0
-TXT_OP_CMPAL    DC.B    'CMPA.L ',0
+TXT_OP_CMPAW    DC.B    'CMPA.W  ',0
+TXT_OP_CMPAL    DC.B    'CMPA.L  ',0
 TXT_OP_CMPI     DC.B    'CMPI.',0
-TXT_OP_DIVSW    DC.B    'DVS.W ',0
+TXT_OP_DIVSW    DC.B    'DVS.W   ',0
 TXT_OP_EOR      DC.B    'EOR.',0
 TXT_OP_EORI     DC.B    'EORI.',0
-TXT_OP_JSR      DC.B    'JSR ',0
-TXT_OP_LEA      DC.B    'LEA ',0
+TXT_OP_JSR      DC.B    'JSR     ',0
+TXT_OP_LEA      DC.B    'LEA     ',0
 TXT_OP_LSL      DC.B    'LSL.',0
 TXT_OP_LSR      DC.B    'LSR.',0
-TXT_OP_MOVEB    DC.B    'MOVE.B ',0
-TXT_OP_MOVEL    DC.B    'MOVE.L ',0
-TXT_OP_MOVEW    DC.B    'MOVE.W ',0
+TXT_OP_MOVEB    DC.B    'MOVE.B  ',0
+TXT_OP_MOVEL    DC.B    'MOVE.L  ',0
+TXT_OP_MOVEW    DC.B    'MOVE.W  ',0
 TXT_OP_MOVEAB   DC.B    'MOVEA.B ',0
 TXT_OP_MOVEAL   DC.B    'MOVEA.L ',0
 TXT_OP_MOVEAW   DC.B    'MOVEA.W ',0
 TXT_OP_MOVEMW   DC.B    'MOVEM.W ',0
 TXT_OP_MOVEML   DC.B    'MOVEM.L ',0
 TXT_OP_MOVEQ    DC.B    'MOVEQ.L ',0
-TXT_OP_MULS     DC.B    'MULS.W ',0
-TXT_OP_NOP      DC.B    'NOP ',0
+TXT_OP_MULS     DC.B    'MULS.W  ',0
+TXT_OP_NOP      DC.B    'NOP     ',0
 TXT_OP_ROL      DC.B    'ROL.',0
 TXT_OP_ROR      DC.B    'ROR.',0
-TXT_OP_RTS      DC.B    'RTS ',0
+TXT_OP_RTS      DC.B    'RTS     ',0
 TXT_OP_SUB      DC.B    'SUB.',0
 TXT_OP_SUBA     DC.B    'SUBA.',0
 TXT_OP_SUBI     DC.B    'SUBI.',0
@@ -1922,6 +1924,7 @@ TXT_QUERY       DC.B    '(Press Enter to continue)',0
 TXT_DEFAULT_EA  DC.B    'XXXXXX',0
 STRING_PTR      DC.B    0
     END    START        ; last line of source
+
 
 
 
