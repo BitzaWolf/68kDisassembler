@@ -4,6 +4,9 @@
 * Date       : 2/15/2016
 * Description: Asks user for starting and ending address
 *-----------------------------------------------------------
+    INCLUDE OpCodes.X68
+    INCLUDE EACodes.X68
+    
     ORG    $1000
 START:                  ; first instruction of program
 *-----------------intro message
@@ -277,6 +280,7 @@ END_INPUT       DS.B    80      Stores the end address input
 
 
     END    START        ; last line of source
+
 
 
 

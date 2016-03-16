@@ -49,7 +49,7 @@ DONTPRINT   ROL.L		#4,D0           Next number
 		    RTS
 		    
             ORG         $3600
-START:                                  ; first instruction of program
+;START:                                  ; first instruction of program
 
 ****************** Testing example for EA ******************     ------------------- TESTING
             ;MOVE.W      #$27,D5         EA dest or src hex i will receive
@@ -236,7 +236,7 @@ CR          EQU         $0D
 LF          EQU         $0A
 DISPERROR   DC.B        'GENERAL EA ERROR',CR,LF,0
 
-            END         START           ; last line of source
+            ;END         START           ; last line of source
 
 
 

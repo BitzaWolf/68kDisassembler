@@ -84,7 +84,7 @@ ZZZZZZZ_END
     ; 
 
     ORG    $2000
-START:                  ; first instruction of program
+;START:                  ; first instruction of program
         CLR.L   D0
         CLR.L   D1
         CLR.L   D2
@@ -168,6 +168,9 @@ OP_ID_0
         CMPI.W  #$0A00,D5
         BEQ     OP_EORI
         
+        CMPI.W  #$0600,D5
+        BEQ     OP_ADDI
+        
         BRA     OP_SUBI
 
 OP_ID_1 
@@ -230,6 +233,9 @@ OP_ID_6
         
         CMPI.W  #$0F00,D5
         BEQ     OP_BLE
+        
+        CMPI.W  #$0100,D5
+        BEQ     OP_BSR
         
         BRA     OP_BVS
         
@@ -407,10 +413,12 @@ OP_ADDA
         BEQ     OP_ADDAW
         
         MOVE.B  #'L',(A5)+
+        MOVE.L  #$10,D7
         BRA     OP_ADDA_END
         
 OP_ADDAW
         MOVE.B  #'W',(A5)+
+        CLR.L   D7
         
 OP_ADDA_END
         MOVE.B  #' ',(A5)+
@@ -429,6 +437,54 @@ OP_ADDA_END
         LSR.W   D0,D5
         ADD.W   #$30,D5
         MOVE.B  D5,(A5)+
+        
+        BRA     LOOP_END
+        
+OP_ADDI
+        MOVE.W  D3,D5
+        ANDI.W  #$FF00,D5
+        CMPI.W  #$0600,D5
+        BNE     BAD_INPUT
+        
+        MOVE.W  D3,D5
+        ANDI.W  #$00C0,D5
+        CMPI.W  #$00C0,D5
+        BEQ     BAD_INPUT
+        
+        JSR     PRINT_ADDRESS
+        LEA     TXT_OP_ADDI,A1
+        JSR     APPEND_STRING
+        JSR     PRINT_SIZE
+        
+        MOVE.B  #'#',(A5)+
+        MOVE.B  #'$',(A5)+
+        CMPI.W  #$0080,D5
+        BEQ     OP_ADDI_L
+        
+        MOVE.W  (A6)+,D0
+        
+        CMPI.W  #$0040,D5
+        BEQ     OP_ADDI_W
+        
+OP_ADDI_B
+        JSR     PRINT_HEX_BYTE
+        BRA     OP_ADDI_END
+        
+OP_ADDI_W
+        JSR     PRINT_HEX_WORD
+        BRA     OP_ADDI_END
+        
+OP_ADDI_L
+        MOVE.L  (A6)+,D0
+        JSR     PRINT_HEX_LONG
+        MOVE.L  #$10,D7
+        
+OP_ADDI_END
+        MOVE.B  #',',(A5)+
+        MOVE.W  D3,D5
+        ANDI.W  #$003F,D5
+        MOVE.L  #1,D6
+        JSR     DUKE_EA_FUNCTION
         
         BRA     LOOP_END
         
@@ -759,6 +815,12 @@ OP_BCHGI
         JSR     DUKE_EA_FUNCTION
         
         BRA     LOOP_END
+        
+OP_BSR
+        JSR     PRINT_ADDRESS
+        LEA     TXT_OP_BSR,A1
+        JSR     APPEND_STRING
+        BRA     OP_BCC_COMMON
 
 OP_CLR   
         ; Verify it's a CLR instruction
@@ -1408,6 +1470,7 @@ OP_MOVEQ
 OP_MULS
         JSR     PRINT_ADDRESS
         LEA     TXT_OP_MULS,A1
+        JSR     APPEND_STRING
         
         MOVE.W  D3,D5
         ANDI.W  #$003F,D5
@@ -1611,15 +1674,17 @@ OP_SUBI
         MOVE.B  #'#',(A5)+
         MOVE.B  #'$',(A5)+
         
-        CMPI.W  #$0020,D5
+        CMPI.W  #$0080,D5
         BEQ     OP_SUBI_L
         
         MOVE.W  (A6)+,D0
+        CLR.L   D7
         JSR     PRINT_HEX_WORD
         BRA     OP_SUBI_END
         
 OP_SUBI_L
         MOVE.L  (A6)+,D0
+        MOVE.L  #$10,D7
         JSR     PRINT_HEX_LONG
         
 OP_SUBI_END
@@ -1627,9 +1692,6 @@ OP_SUBI_END
         MOVE.W  D3,D5
         ANDI.W  #$003F,D5
         MOVE.L  #1,D6
-        MOVE.L  D3,D7
-        ANDI.W  #$00C0,D7
-        LSR.W   #6,D7
         JSR     DUKE_EA_FUNCTION
         
         BRA     LOOP_END
@@ -1666,7 +1728,10 @@ PRINT_ADDRESS
         MOVE.L  A6,D0           ; Move op-code address to D0
         SUBI.L  #2,D0           ; Subtract 2 because pointer is to next op-code
         JSR     PRINT_HEX_LONG
-        MOVE.L  #'    ',(A5)+
+        MOVE.B  #' ',(A5)+
+        MOVE.B  #' ',(A5)+
+        MOVE.B  #' ',(A5)+
+        MOVE.B  #' ',(A5)+
         
         MOVEM.L (SP)+,D0-D2
         RTS
@@ -1879,6 +1944,7 @@ Z_END
 TXT_DATA        DC.B    'DATA    ',0
 TXT_OP_ADD      DC.B    'ADD.',0
 TXT_OP_ADDA     DC.B    'ADDA.',0
+TXT_OP_ADDI     DC.B    'ADDI.',0
 TXT_OP_ADDQ     DC.B    'ADDQ.',0
 TXT_OP_AND      DC.B    'AND.',0
 TXT_OP_ANDI     DC.B    'ANDI.',0
@@ -1889,6 +1955,7 @@ TXT_OP_ASR_EA   DC.B    'ASR     ',0
 TXT_OP_BCC      DC.B    'BCC     ',0
 TXT_OP_BGT      DC.B    'BGT     ',0
 TXT_OP_BLE      DC.B    'BLE     ',0
+TXT_OP_BSR      DC.B    'BSR     ',0
 TXT_OP_BVS      DC.B    'BVS     ',0
 TXT_OP_BCHG     DC.B    'BCHG    ',0
 TXT_OP_CLR      DC.B    'CLR.',0
@@ -1923,7 +1990,8 @@ TXT_OP_SUBI     DC.B    'SUBI.',0
 TXT_QUERY       DC.B    '(Press Enter to continue)',0
 TXT_DEFAULT_EA  DC.B    'XXXXXX',0
 STRING_PTR      DC.B    0
-    END    START        ; last line of source
+    ;END    START        ; last line of source
+
 
 
 
